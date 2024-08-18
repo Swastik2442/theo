@@ -1,32 +1,33 @@
 import { db } from "~/server/db";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"; // Does not Cache the Page
 
-// const mockURLs = [
-//   "https://utfs.io/f/0591c940-a64f-48e1-bdff-2dc6b0e089ac-2alj.jpg",
-//   "https://utfs.io/f/4303553f-d75a-4cb5-985a-f13e4ad3ddb5-278l.jpg",
-// ];
-
-// const mockImages = mockURLs.map((url, index) => ({
-//   id: index + 1,
-//   url,
-// }));
-
-export default async function HomePage() {
+async function Images() {
   const images = await db.query.images.findMany({
     orderBy: (model, { desc }) => desc(model.id),
   });
-  
   return (
-    <main className="black">
-      <div className="flex flex-wrap gap-4">
-        {[...images, ...images, ...images].map((image) => (
-          <div key={image.id} className="w-48 flex flex-col">
-            <img src={image.url} />
-            <div>{image.name}</div>
-          </div>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-4">
+      {images.map((image) => (
+        <div key={image.id} className="w-48 flex flex-col">
+          <img src={image.url} />
+          <div>{image.name}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <main>
+      <SignedIn><Images /></SignedIn>
+      <SignedOut>
+        <div className="h-full w-full text-2xl text-center">
+          Sign in to see Images
+        </div>
+      </SignedOut>
     </main>
   );
 }

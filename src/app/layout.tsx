@@ -2,6 +2,10 @@ import "~/styles/globals.css";
 import TopNav from "~/app/_components/TopNav";
 
 import { ClerkProvider } from '@clerk/nextjs';
+import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
+import { extractRouterConfig } from "uploadthing/server";
+ 
+import { ourFileRouter } from "~/app/api/uploadthing/core";
 
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
@@ -19,6 +23,7 @@ export default function RootLayout({
     <ClerkProvider>
     <html lang="en" className={`${GeistSans.variable}`}>
       <body className="flex flex-col gap-4">
+      <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
         <TopNav />
         {children}
       </body>
