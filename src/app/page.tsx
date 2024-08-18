@@ -1,4 +1,5 @@
 import { SignedIn, SignedOut } from "@clerk/nextjs";
+import Image from "next/image";
 
 import { getMyImages } from "~/server/queries";
 
@@ -7,10 +8,10 @@ export const dynamic = "force-dynamic"; // Does not Cache the Page
 async function Images() {
   const images = await getMyImages();
   return (
-    <div className="flex flex-wrap gap-4">
+    <div className="px-4 flex flex-wrap gap-4">
       {images.map((image) => (
         <div key={image.id} className="w-48 flex flex-col">
-          <img src={image.url} />
+          <Image src={image.url} alt={image.name} width={192} height={192} />
           <div>{image.name}</div>
         </div>
       ))}
