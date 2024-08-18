@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic"; // Does not Cache the Page
 async function Images() {
   const images = await getMyImages();
   return (
-    <div className="px-4 flex flex-wrap gap-4">
-      {images.map((image) => (
+    <div className="p-4 flex flex-wrap gap-4 items-center justify-center">
+      {[...images,...images,...images,...images,...images,...images,...images,...images,...images,...images,...images,...images,...images,...images,...images].map((image) => (
         <div key={image.id} className="w-48 flex flex-col">
           <Link href={`/images/${image.id}`}>
             <Image src={image.url} alt={image.name} width={192} height={192} />

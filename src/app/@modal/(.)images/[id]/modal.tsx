@@ -22,7 +22,7 @@ export function Modal({ children }: { children: React.ReactNode }) {
     <div className="modal-backdrop">
       <dialog ref={dialogRef} className="w-screen h-screen bg-zinc-500/50" onClose={onDismiss}>
         {children}
-        <button onClick={onDismiss} className="close-button" />
+        {/* <button onClick={onDismiss} className="close-button" /> */}
       </dialog>
     </div>,
     document.body!
