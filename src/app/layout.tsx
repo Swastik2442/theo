@@ -9,6 +9,7 @@ import { ourFileRouter } from "~/app/api/uploadthing/core";
 
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
+import { Toaster } from "~/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Theo",
@@ -29,6 +30,7 @@ export default function RootLayout({
           <TopNav />
           <main className="overflow-y-auto">{children}</main>
           {modal}
+          <Toaster />
         </div>
       </body>
     </html>

@@ -72,3 +72,14 @@ dialog {
   max-width: 100%;
   max-height: 100%;
 }
+
+.spinner_aj0A {
+  transform-origin: center;
+  animation: spinner_KYSC 0.75s infinite linear;
+}
+
+@keyframes spinner_KYSC {
+  100% {
+    transform: rotate(360deg);
+  }
+}
