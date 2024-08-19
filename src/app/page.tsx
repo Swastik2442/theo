@@ -10,12 +10,12 @@ async function Images() {
   const images = await getMyImages();
   return (
     <div className="p-4 flex flex-wrap gap-4 items-center justify-center">
-      {[...images,...images,...images,...images,...images,...images,...images,...images,...images,...images,...images,...images,...images,...images,...images].map((image) => (
+      {images.map((image) => (
         <div key={image.id} className="w-48 flex flex-col">
           <Link href={`/images/${image.id}`}>
             <Image src={image.url} alt={image.name} width={192} height={192} />
           </Link>
-          <div>{image.name}</div>
+          <div className="max-w-48">{image.name}</div>
         </div>
       ))}
     </div>
@@ -27,7 +27,7 @@ export default function HomePage() {
     <main>
       <SignedIn><Images /></SignedIn>
       <SignedOut>
-        <div className="h-full w-full text-2xl text-center">
+        <div className="h-full w-full p-4 text-2xl text-center">
           Sign in to see Images
         </div>
       </SignedOut>
