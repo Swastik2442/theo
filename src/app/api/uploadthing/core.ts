@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
  
 import { db } from "~/server/db";
 import { images } from "~/server/db/schema";
+import { ratelimit } from "~/server/ratelimit";
 
 const f = createUploadthing();
 
@@ -11,7 +12,10 @@ export const ourFileRouter = {
   imageUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 10 } })
     .middleware(async ({ req }) => { // Set permissions and file types
       const user = auth();
-      if (!user) throw new UploadThingError("Unauthorized");
+      if (!user.userId) throw new UploadThingError("Unauthorized");
+
+      const { success } = await ratelimit.limit(user.userId);
+      if (!success) throw new UploadThingError("Rate limited");
  
       // Accessible in onUploadComplete as `metadata`
       return { userId: user.userId };
