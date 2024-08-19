@@ -36,18 +36,16 @@ export function SimpleUploadButton() {
     "imageUploader",
     {
       onUploadBegin() {
-        // useEffect(() => {
-          toast(
-            <div className="flex gap-2 items-center">
-              <LoadingIcon />
-              <span className="text-lg">Uploading...</span>
-            </div>,
-            {
-              id: "upload-begin",
-              duration: 60000,
-            }
-          )
-        // }, []);
+        toast(
+          <div className="flex gap-2 items-center">
+            <LoadingIcon />
+            <span className="text-lg">Uploading...</span>
+          </div>,
+          {
+            id: "upload-begin",
+            duration: 60000,
+          }
+        )
       },
       onClientUploadComplete() {
         toast.dismiss("upload-begin");

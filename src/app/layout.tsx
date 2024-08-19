@@ -1,11 +1,12 @@
 import "~/styles/globals.css";
 import TopNav from "~/app/_components/TopNav";
 
-import { ClerkProvider } from '@clerk/nextjs';
+import { ClerkProvider } from "@clerk/nextjs";
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
- 
+
 import { ourFileRouter } from "~/app/api/uploadthing/core";
+import { CSPostHogProvider } from "~/app/_analytics/providers";
 
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
@@ -23,6 +24,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode, modal: React.ReactNode }>) {
   return (
     <ClerkProvider>
+    <CSPostHogProvider>
     <html lang="en" className={`${GeistSans.variable} dark`}>
       <body>
         <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
@@ -34,6 +36,7 @@ export default function RootLayout({
         </div>
       </body>
     </html>
+    </CSPostHogProvider>
     </ClerkProvider>
   );
 }
