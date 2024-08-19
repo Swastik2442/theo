@@ -4,8 +4,14 @@ import Link from "next/link";
 
 import { getMyImages } from "~/server/queries";
 
-export const dynamic = "force-dynamic"; // Does not Cache the Page
+// Does not Cache the Page
+export const dynamic = "force-dynamic";
 
+/*
+  TODO: Fix for Images of different Resolutions
+  TODO: Add "Selecting Images" for Mass Action (zustand?)
+  TODO: Pagination or Infinite Scroll
+*/
 async function Images() {
   const images = await getMyImages();
   return (
@@ -22,15 +28,19 @@ async function Images() {
   )
 }
 
+function SignInPrompt() {
+  return (
+    <div className="h-full w-full p-4 text-2xl text-center">
+      Sign in to see Images
+    </div>
+  )
+}
+
 export default function HomePage() {
   return (
-    <main>
+    <>
       <SignedIn><Images /></SignedIn>
-      <SignedOut>
-        <div className="h-full w-full p-4 text-2xl text-center">
-          Sign in to see Images
-        </div>
-      </SignedOut>
-    </main>
+      <SignedOut><SignInPrompt /></SignedOut>
+    </>
   );
 }

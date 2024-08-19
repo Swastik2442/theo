@@ -26,12 +26,12 @@ export async function getImage(id: number) {
   const image = await db.query.images.findFirst({
     where: (model, { eq, and }) => and(eq(model.userID, user.userId), eq(model.id, id)),
   });
-
   if (!image) throw new Error("Not Found");
 
   return image;
 }
 
+// BUG: Client sends the form POST (causing getImage to throw Error) after being redirected (GET)
 export async function deleteImage(id: number) {
   const user = auth();
   if (!user.userId) throw new Error("Unauthorized");

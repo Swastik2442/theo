@@ -7,7 +7,7 @@ const day = 1000 * 60 * 60 * 24;
 
 export default async function ImageModal({ id }: { id: number }) {
   const image = await getImage(id);
-  const uploader = await clerkClient.users.getUser(image.userID);
+  const uploader = await clerkClient().users.getUser(image.userID);
 
   const dateCreated = new Date(image.createdAt);
   const dateDiff = (new Date().getTime() - dateCreated.getTime()) / day;

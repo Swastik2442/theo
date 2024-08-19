@@ -1,21 +1,23 @@
 import "~/styles/globals.css";
 
+import { type Metadata } from "next";
+import { GeistSans } from "geist/font/sans";
 import { ClerkProvider } from "@clerk/nextjs";
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
-import { GeistSans } from "geist/font/sans";
-import { type Metadata } from "next";
 
 import { ourFileRouter } from "~/app/api/uploadthing/core";
 import { CSPostHogProvider } from "~/app/_analytics/providers";
 
-import { Toaster } from "~/components/ui/sonner";
 import TopNav from "~/app/_components/TopNav";
+import { Toaster } from "~/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Theo",
-  description: "React Tut by T3.gg",
+  description: "A Simple Image Gallery",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
+  appleWebApp: { capable: false },
+  other: { "mobile-web-app-capable": "no" }
 };
 
 export default function RootLayout({

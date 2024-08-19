@@ -1,29 +1,28 @@
-# Create T3 App
+# Theo
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+An Image Gallery based on the Full-Stack React Tutorial by [T3.gg](https://youtu.be/d5x0JCZbAJs).
 
-## What's next? How do I make an app with this?
+## Uses
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+* Next.js
+* Drizzle
+* Clerk
+* Uploadthing
+* Sentry
+* Posthog
+* Upstash
+* Vercel
+* Tailwind
+* shadcn/ui
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+## Running
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+```bash
+git clone https://github.com/Swastik2442/theo.git
+cd theo
+npm install
+```
 
-## Learn More
+Setup the Services and set the Environment Variables similar to those in `.env.example`.
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
-
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
-
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
-
-## How do I deploy this?
-
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+Lastly, start the server using `npm run dev` and visit `localhost:3000`.
