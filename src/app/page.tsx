@@ -8,7 +8,7 @@ import { getMyImages } from "~/server/queries";
 export const dynamic = "force-dynamic";
 
 /*
-  TODO: Fix for Images of different Resolutions
+  TODO: Remove File Extension from Image Name and Add to Details
   TODO: Add "Selecting Images" for Mass Action (zustand?)
   TODO: Pagination or Infinite Scroll
 */
@@ -19,9 +19,9 @@ async function Images() {
       {images.map((image) => (
         <div key={image.id} className="w-48 flex flex-col">
           <Link href={`/images/${image.id}`}>
-            <Image src={image.url} alt={image.name} width={192} height={192} />
+            <Image src={image.url} alt={image.name} width={192} height={192} className="aspect-square object-contain" />
           </Link>
-          <div className="max-w-48">{image.name}</div>
+          <div className="max-w-48 text-center pt-1">{image.name}</div>
         </div>
       ))}
     </div>
