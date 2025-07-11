@@ -9,6 +9,7 @@ import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "~/app/api/uploadthing/core";
 import { CSPostHogProvider } from "~/app/_analytics/providers";
 
+import { ThemeProvider } from "~/contexts/themeProvider";
 import TopNav from "~/components/TopNav";
 import { Toaster } from "~/components/ui/sonner";
 
@@ -26,19 +27,23 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode, modal: React.ReactNode }>) {
   return (
     <ClerkProvider>
-      <CSPostHogProvider>
-        <html lang="en" className={`${GeistSans.variable} dark`}>
-          <body>
-            <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
-            <div className="grid h-screen grid-rows-[auto,1fr]">
-              <TopNav />
+    <CSPostHogProvider>
+    <ThemeProvider>
+      <html lang="en" className={`${GeistSans.variable} dark`}>
+        <body>
+          <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
+          <div className="h-screen">
+            <TopNav />
+            <div className="grid grid-rows-[auto,1fr]">
               <main className="overflow-y-auto">{children}</main>
             </div>
-            {modal}
-            <Toaster />
-          </body>
-        </html>
-      </CSPostHogProvider>
+          </div>
+          {modal}
+          <Toaster />
+        </body>
+      </html>
+    </ThemeProvider>
+    </CSPostHogProvider>
     </ClerkProvider>
   );
 }
