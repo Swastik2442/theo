@@ -1,7 +1,7 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
- 
+
 import { db } from "~/server/db";
 import { images } from "~/server/db/schema";
 import { ratelimit } from "~/server/ratelimit";
@@ -10,17 +10,19 @@ const f = createUploadthing();
 
 export const ourFileRouter = {
   imageUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 10 } })
-    .middleware(async ({ req }) => { // Set permissions and file types
-      const user = auth();
+    // Set permissions and file types for this FileRoute
+    .middleware(async () => {
+      const user = await auth();
       if (!user.userId) throw new UploadThingError("Unauthorized");
 
-      const userInfo = await clerkClient().users.getUser(user.userId);
+      const clerk = await clerkClient();
+      const userInfo = await clerk.users.getUser(user.userId);
       if (userInfo?.privateMetadata?.["upload-perm"] !== true)
         throw new UploadThingError("No Upload Permission");
 
       const { success } = await ratelimit.limit(user.userId);
       if (!success) throw new UploadThingError("Rate limited");
- 
+
       // Accessible in onUploadComplete as `metadata`
       return { userId: user.userId };
     })
@@ -28,13 +30,13 @@ export const ourFileRouter = {
       console.log(`Image Upload (${file.size}) complete for userId: ${metadata.userId}`);
       await db.insert(images).values({
         name: file.name,
-        url: file.url,
+        url: file.ufsUrl,
         userID: metadata.userId
       });
- 
-      // Sent to the clientside `onClientUploadComplete` callback
+
+      // Sent to the client side `onClientUploadComplete` callback
       return { uploadedBy: metadata.userId };
     }),
 } satisfies FileRouter;
- 
+
 export type OurFileRouter = typeof ourFileRouter;

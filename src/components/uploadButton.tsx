@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 import { toast } from "sonner";
+import { env } from "~/env";
 
 import { useUploadThing } from "~/utils/uploadthing";
 
@@ -17,7 +18,8 @@ const useUploadThingInputProps = (...args: Input) => {
     const selectedFiles = Array.from(e.target.files);
     const result = await $ut.startUpload(selectedFiles);
 
-    console.log("uploaded files", result);
+    if (env.NODE_ENV in ['development', 'test'])
+      console.log("uploaded files", result);
   };
 
   return {

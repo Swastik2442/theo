@@ -1,0 +1,12 @@
+onlyBuiltDependencies:
+  - '@clerk/shared'
+  - '@sentry/cli'
+  - '@tailwindcss/oxide'
+  - bufferutil
+  - core-js
+  - es5-ext
+  - esbuild
+  - msgpackr-extract
+  - sharp
+  - unrs-resolver
+  - utf-8-validate

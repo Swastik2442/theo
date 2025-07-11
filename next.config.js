@@ -6,7 +6,8 @@ import { withSentryConfig } from "@sentry/nextjs";
 const coreConfig = {
     images: {
         remotePatterns: [
-            {hostname: "utfs.io"}
+            {hostname: "utfs.io"},
+            {hostname: "o04oe0by95.ufs.sh"}
     ]},
     typescript: {
         ignoreBuildErrors: true, // Useful for separate Error Checking (Sentry)

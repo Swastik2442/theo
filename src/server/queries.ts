@@ -9,7 +9,7 @@ import { images } from "./db/schema";
 import analyticsServerClient from "./analytics";
 
 export async function getMyImages() {
-  const user = auth();
+  const user = await auth();
   if (!user.userId) throw new Error("Unauthorized");
 
   const images = await db.query.images.findMany({
@@ -20,7 +20,7 @@ export async function getMyImages() {
 }
 
 export async function getImage(id: number) {
-  const user = auth();
+  const user = await auth();
   if (!user.userId) throw new Error("Unauthorized");
 
   const image = await db.query.images.findFirst({
@@ -33,7 +33,7 @@ export async function getImage(id: number) {
 
 // BUG: Client sends the form POST (causing getImage to throw Error) after being redirected (GET)
 export async function deleteImage(id: number) {
-  const user = auth();
+  const user = await auth();
   if (!user.userId) throw new Error("Unauthorized");
 
   await db.delete(images).where(

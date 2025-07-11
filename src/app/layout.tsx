@@ -9,7 +9,7 @@ import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "~/app/api/uploadthing/core";
 import { CSPostHogProvider } from "~/app/_analytics/providers";
 
-import TopNav from "~/app/_components/TopNav";
+import TopNav from "~/components/TopNav";
 import { Toaster } from "~/components/ui/sonner";
 
 export const metadata: Metadata = {
