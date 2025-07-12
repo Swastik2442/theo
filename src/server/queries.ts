@@ -27,6 +27,17 @@ export async function createAlbum(name: AlbumName) {
   }).returning({ id: albums.id }))[0]!;
 }
 
+export async function getMyAlbums() {
+  const user = await auth();
+  if (!user.userId) throw new Error("Unauthorized");
+
+  const albums = await db.query.albums.findMany({
+    where: (model, { eq }) => eq(model.userID, user.userId),
+    orderBy: (model, { asc }) => asc(lower(model.name)),
+  });
+  return albums;
+}
+
 export async function getMyImages() {
   const user = await auth();
   if (!user.userId) throw new Error("Unauthorized");

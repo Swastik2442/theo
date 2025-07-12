@@ -1,7 +1,7 @@
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 
-import { getMyImages } from "~/server/queries";
-import ImagesGrid from "~/components/imagesGrid";
+import { getMyAlbums, getMyImages } from "~/server/queries";
+import { AlbumsAndImagesGrid } from "~/components/grids";
 
 // Does not Cache the Page
 export const dynamic = "force-dynamic";
@@ -10,9 +10,10 @@ export const dynamic = "force-dynamic";
   TODO: Add "Selecting Images" for Mass Action (zustand?)
   TODO: Pagination or Infinite Scroll
 */
-async function Images() {
+async function AlbumsAndImages() {
+  const albums = await getMyAlbums();
   const images = await getMyImages();
-  return <ImagesGrid images={images} />;
+  return <AlbumsAndImagesGrid albums={albums} images={images} />;
 }
 
 function SignInPrompt() {
@@ -26,7 +27,7 @@ function SignInPrompt() {
 export default function HomePage() {
   return (
     <>
-      <SignedIn><Images /></SignedIn>
+      <SignedIn><AlbumsAndImages /></SignedIn>
       <SignedOut><SignInPrompt /></SignedOut>
     </>
   );

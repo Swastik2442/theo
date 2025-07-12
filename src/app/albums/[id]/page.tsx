@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import ImagesGrid from "~/components/imagesGrid";
+import { ImagesGrid } from "~/components/grids";
 
 import { getAlbumImages } from "~/server/queries";
 
