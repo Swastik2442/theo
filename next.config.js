@@ -6,9 +6,13 @@ import { withSentryConfig } from "@sentry/nextjs";
 const coreConfig = {
     images: {
         remotePatterns: [
-            {hostname: "utfs.io"},
-            {hostname: "o04oe0by95.ufs.sh"}
-    ]},
+            {
+                protocol: "https",
+                hostname: "o04oe0by95.ufs.sh",
+                pathname: "/f/*",
+            }
+        ]
+    },
     typescript: {
         ignoreBuildErrors: true, // Useful for separate Error Checking (Sentry)
     },
@@ -16,20 +20,20 @@ const coreConfig = {
         ignoreDuringBuilds: true,
     },
     async rewrites() {
-      return [
-        {
-          source: "/ingest/static/:path*",
-          destination: "https://eu-assets.i.posthog.com/static/:path*",
-        },
-        {
-          source: "/ingest/:path*",
-          destination: "https://eu.i.posthog.com/:path*",
-        },
-        {
-          source: "/ingest/decide",
-          destination: "https://eu.i.posthog.com/decide",
-        },
-      ];
+        return [
+            {
+                source: "/ingest/static/:path*",
+                destination: "https://eu-assets.i.posthog.com/static/:path*"
+            },
+            {
+                source: "/ingest/:path*",
+                destination: "https://eu.i.posthog.com/:path*"
+            },
+            {
+                source: "/ingest/decide",
+                destination: "https://eu.i.posthog.com/decide"
+            }
+        ];
     },
     skipTrailingSlashRedirect: true,
 };
@@ -44,7 +48,7 @@ const config = withSentryConfig(
 
         silent: !process.env.CI,
         reactComponentAnnotation: { enabled: true },
-        hideSourceMaps: true,
+        sourcemaps: { disable: true },
         disableLogger: true,
         automaticVercelMonitors: true,
 
