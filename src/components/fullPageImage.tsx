@@ -16,7 +16,7 @@ export default async function ImageModal({ id }: { id: number }) {
   return (
     <div className="flex flex-col sm:flex-row w-full h-full justify-center">
       <div className="flex flex-shrink items-center justify-center">
-        <img src={image.url} className="flex-shrink max-h-full" alt={image.name} />
+        <img src={image.url} alt={image.name} className="flex-shrink max-h-full" />
       </div>
       <div className="flex flex-col flex-shrink-0 min-w-64 w-100 sm:w-64 bg-black/75 text-white border-x">
         <div className="text-lg border-b p-2 text-center">{image.name}</div>

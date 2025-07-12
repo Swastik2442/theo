@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 import { toast } from "sonner";
-import { env } from "~/env";
 
 import { useUploadThing } from "~/utils/uploadthing";
 
@@ -16,10 +15,10 @@ const useUploadThingInputProps = (...args: Input) => {
     if (!e.target.files) return;
 
     const selectedFiles = Array.from(e.target.files);
-    const result = await $ut.startUpload(selectedFiles);
+    await $ut.startUpload(selectedFiles);
 
-    if (env.NODE_ENV in ['development', 'test'])
-      console.log("uploaded files", result);
+    // const result = await $ut.startUpload(selectedFiles);
+    // console.log("uploaded files", result);
   };
 
   return {
@@ -36,7 +35,7 @@ export function SimpleUploadButton() {
   const router = useRouter();
   const posthog = usePostHog();
 
-  const { inputProps } = useUploadThingInputProps(
+  const { inputProps, isUploading } = useUploadThingInputProps(
     "imageUploader",
     {
       onUploadBegin() {
@@ -76,15 +75,17 @@ export function SimpleUploadButton() {
   );
 
   return (
-    <label className="cursor-pointer" title="Upload File(s)">
-      <UploadIcon />
-      <input type="file" className="sr-only" {...inputProps} />
+    <label className="cursor-pointer" title={isUploading ? "Uploading..." : "Upload File(s)"}>
+      {isUploading ? <LoadingIcon /> : <>
+        <UploadIcon />
+        <input type="file" className="sr-only" {...inputProps} />
+      </>}
     </label>
   );
 }
 
 const UploadIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 fill-background">
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15m0-3-3-3m0 0-3 3m3-3V15" />
   </svg>
 );

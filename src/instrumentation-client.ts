@@ -18,6 +18,13 @@ Sentry.init({
   // in development and sample at a lower rate in production
   replaysSessionSampleRate: 0.1,
 
+  beforeSend(event, hint) {
+    if (process.env.NODE_ENV === 'development') {
+      return null;
+    }
+    return event;
+  },
+
   integrations: [
     Sentry.replayIntegration({
       // Additional Replay configuration goes in here, for example:
