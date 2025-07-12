@@ -8,8 +8,13 @@ const coreConfig = {
         remotePatterns: [
             {
                 protocol: "https",
+                hostname: "utfs.io",
+                pathname: "/f/*"
+            },
+            {
+                protocol: "https",
                 hostname: "o04oe0by95.ufs.sh",
-                pathname: "/f/*",
+                pathname: "/f/*"
             }
         ]
     },

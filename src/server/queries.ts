@@ -13,8 +13,19 @@ export async function getMyImages() {
   if (!user.userId) throw new Error("Unauthorized");
 
   const images = await db.query.images.findMany({
-    where: (model, { eq }) => eq(model.userID, user.userId),
-    orderBy: (model, { desc }) => desc(model.id),
+    where: (model, { eq, and, isNull }) => and(isNull(model.albumID), eq(model.userID, user.userId)),
+    orderBy: (model, { desc }) => desc(model.name),
+  });
+  return images;
+}
+
+export async function getAlbumImages(albumID: number) {
+  const user = await auth();
+  if (!user.userId) throw new Error("Unauthorized");
+
+  const images = await db.query.images.findMany({
+    where: (model, { eq, and }) => and(eq(model.albumID, albumID), eq(model.userID, user.userId)),
+    orderBy: (model, { desc }) => desc(model.name),
   });
   return images;
 }
@@ -39,6 +50,7 @@ export async function deleteImage(id: number) {
   await db.delete(images).where(
     and(eq(images.id, id), eq(images.userID, user.userId))
   );
+  // TODO: Delete from UploadThing as well
 
   analyticsServerClient.capture({
     distinctId: user.userId,
