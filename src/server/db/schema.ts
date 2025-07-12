@@ -1,5 +1,5 @@
-import { sql, relations } from "drizzle-orm";
-import { index, pgTableCreator, serial, timestamp, varchar, integer } from "drizzle-orm/pg-core";
+import { sql, relations, SQL } from "drizzle-orm";
+import { index, pgTableCreator, serial, timestamp, varchar, integer, AnyPgColumn } from "drizzle-orm/pg-core";
 
 export const createTable = pgTableCreator((name) => `theo_${name}`);
 
@@ -51,3 +51,7 @@ export const imagesRelations = relations(images, ({ one }) => ({
     references: [albums.id]
   })
 }));
+
+export function lower(column: AnyPgColumn): SQL {
+  return sql`lower(${column})`;
+}

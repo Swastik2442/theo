@@ -5,8 +5,27 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
 import { db } from "~/server/db";
-import { images } from "./db/schema";
+import { albums, images, lower } from "./db/schema";
 import analyticsServerClient from "./analytics";
+import z from "zod";
+
+export const AlbumNameSchema = z.string().trim().min(1).max(256);
+export type AlbumName = z.infer<typeof AlbumNameSchema>;
+
+export async function createAlbum(name: AlbumName) {
+  const user = await auth();
+  if (!user.userId) throw new Error("Unauthorized");
+
+  const existingAlbum = await db.query.albums.findFirst({
+    where: (model, { eq, and }) => and(eq(model.name, name), eq(model.userID, user.userId)),
+  });
+  if (existingAlbum) throw new Error("Album already exists");
+
+  return (await db.insert(albums).values({
+    name,
+    userID: user.userId,
+  }).returning({ id: albums.id }))[0]!;
+}
 
 export async function getMyImages() {
   const user = await auth();
@@ -14,7 +33,7 @@ export async function getMyImages() {
 
   const images = await db.query.images.findMany({
     where: (model, { eq, and, isNull }) => and(isNull(model.albumID), eq(model.userID, user.userId)),
-    orderBy: (model, { desc }) => desc(model.name),
+    orderBy: (model, { asc }) => asc(lower(model.name)),
   });
   return images;
 }
@@ -25,7 +44,7 @@ export async function getAlbumImages(albumID: number) {
 
   const images = await db.query.images.findMany({
     where: (model, { eq, and }) => and(eq(model.albumID, albumID), eq(model.userID, user.userId)),
-    orderBy: (model, { desc }) => desc(model.name),
+    orderBy: (model, { asc }) => asc(lower(model.name)),
   });
   return images;
 }
