@@ -8,12 +8,12 @@ import { fileName } from "~/utils/file";
 type TAlbum = Pick<typeof albums.$inferSelect, "id" | "name">;
 type TImage = Pick<typeof images.$inferSelect, "id" | "url" | "name">;
 
-function CustomGrid({ items }: { items: React.ReactNode[] }) {
+function CustomGrid({ items }: { items: { key: React.Key; component: React.ReactNode; }[] }) {
   return (
     <div className="p-4 flex flex-wrap gap-4 items-center justify-center">
-      {items.map((item, idx) => (
-        <div key={idx} className="w-48 flex flex-col">
-          {item}
+      {items.map((item) => (
+        <div key={item.key} className="w-48 flex flex-col">
+          {item.component}
         </div>
       ))}
     </div>
@@ -54,20 +54,23 @@ function ImageCard({ image }: { image: TImage }) {
 export async function AlbumsAndImagesGrid({ albums, images }: { albums: TAlbum[]; images: TImage[] }) {
   return (
     <CustomGrid items={[
-      ...albums.map((album) => (
-        <AlbumCard key={`album-${album.id}`} album={album} />
-      )),
-      ...images.map((image) => (
-        <ImageCard key={`image-${image.id}`} image={image} />
-      )),
+      ...albums.map((album) => ({
+        key: `album-${album.id}`,
+        component: <AlbumCard album={album} />
+      })),
+      ...images.map((image) => ({
+        key: `image-${image.id}`,
+        component: <ImageCard image={image} />
+      })),
     ]} />
   );
 }
 
 export async function ImagesGrid({ images }: { images: TImage[] }) {
   return (
-    <CustomGrid items={images.map((image) => (
-      <ImageCard key={`image-${image.id}`} image={image} />
-    ))} />
+    <CustomGrid items={images.map((image) => ({
+      key: `image-${image.id}`,
+      component: <ImageCard image={image} />
+    }))} />
   )
 }

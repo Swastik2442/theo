@@ -144,6 +144,18 @@ export async function getAlbumImages(albumID: number) {
   return images;
 }
 
+export async function getAlbum(id: number) {
+  const user = await auth();
+  if (!user.userId) throw new Error("Unauthorized");
+
+  const album = await db.query.albums.findFirst({
+    where: (model, { eq, and }) => and(eq(model.userID, user.userId), eq(model.id, id)),
+  });
+  if (!album) return null;
+
+  return album;
+}
+
 export async function getImage(id: number) {
   const user = await auth();
   if (!user.userId) throw new Error("Unauthorized");
@@ -151,7 +163,7 @@ export async function getImage(id: number) {
   const image = await db.query.images.findFirst({
     where: (model, { eq, and }) => and(eq(model.userID, user.userId), eq(model.id, id)),
   });
-  if (!image) throw new Error("Not Found");
+  if (!image) return null;
 
   return image;
 }
@@ -188,6 +200,8 @@ export type ImageUpdate = z.infer<typeof ImageUpdateSchema>;
 
 export async function updateImage(id: number, options: ImageUpdate) {
   const image = await getImage(id);
+  if (!image) throw new Error("Image not found");
+
   options.name ??= image.name;
   options.albumID ??= image.albumID;
 
