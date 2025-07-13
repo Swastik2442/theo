@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { albums, images } from "~/server/db/schema"
 import { gradientFromString } from "~/utils/color";
-import { removedExtension } from "~/utils/file";
+import { fileName } from "~/utils/file";
 
 type TAlbum = Pick<typeof albums.$inferSelect, "id" | "name">;
 type TImage = Pick<typeof images.$inferSelect, "id" | "url" | "name">;
@@ -46,7 +46,7 @@ function ImageCard({ image }: { image: TImage }) {
         width={192} height={192}
         className="aspect-square object-contain border rounded-md border-accent hover:border-accent-foreground"
       />
-      <p className="max-w-48 text-center pt-1 truncate" title={image.name}>{removedExtension(image.name)}</p>
+      <p className="max-w-48 text-center pt-1 truncate" title={image.name}>{fileName(image.name)}</p>
     </Link>
   );
 }

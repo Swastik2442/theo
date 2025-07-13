@@ -4,7 +4,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { z } from "zod";
 
 import { db } from "~/server/db";
-import { images } from "~/server/db/schema";
+import { createImage } from "~/server/queries";
 import { ratelimit } from "~/server/ratelimit";
 
 const f = createUploadthing();
@@ -39,7 +39,7 @@ export const ourFileRouter = {
     })
     .onUploadComplete(async ({ metadata, file }) => {
       console.log(`Image Upload (${file.size}) complete for userId: ${metadata.userId}`);
-      await db.insert(images).values({
+      await createImage({
         name: file.name,
         key: file.key,
         url: file.ufsUrl,

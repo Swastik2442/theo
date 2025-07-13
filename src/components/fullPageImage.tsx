@@ -1,4 +1,5 @@
 import { clerkClient } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
 import { deleteImage, getImage } from "~/server/queries";
 import { Button } from "./ui/button";
@@ -36,6 +37,7 @@ export default async function ImageModal({ id }: { id: number }) {
           <form action={async () => {
             "use server";
             await deleteImage(id);
+            redirect("/");
           }}>
             <Button type="submit" variant="destructive">Delete</Button>
           </form>

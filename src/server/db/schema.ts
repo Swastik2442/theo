@@ -1,7 +1,8 @@
 import { sql, relations, SQL } from "drizzle-orm";
 import { index, pgTableCreator, serial, timestamp, varchar, integer, AnyPgColumn } from "drizzle-orm/pg-core";
 
-export const createTable = pgTableCreator((name) => `theo_${name}`);
+export const tableName = (name: string) => `theo_${name}`;
+export const createTable = pgTableCreator(tableName);
 
 export const images = createTable(
   "image",
