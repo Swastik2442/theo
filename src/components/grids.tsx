@@ -65,12 +65,3 @@ export async function AlbumsAndImagesGrid({ albums, images }: { albums: TAlbum[]
     ]} />
   );
 }
-
-export async function ImagesGrid({ images }: { images: TImage[] }) {
-  return (
-    <CustomGrid items={images.map((image) => ({
-      key: `image-${image.id}`,
-      component: <ImageCard image={image} />
-    }))} />
-  )
-}

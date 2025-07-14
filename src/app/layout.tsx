@@ -12,6 +12,7 @@ import { CSPostHogProvider } from "~/app/_analytics/providers";
 import { ThemeProvider } from "~/contexts/themeProvider";
 import TopNav from "~/components/TopNav";
 import { Toaster } from "~/components/ui/sonner";
+import { RouteStoreProvider } from "~/contexts/routeStoreProvider";
 
 export const metadata: Metadata = {
   title: "Theo",
@@ -29,6 +30,7 @@ export default function RootLayout({
     <ClerkProvider>
     <CSPostHogProvider>
     <ThemeProvider>
+    <RouteStoreProvider>
       <html lang="en" className={`${GeistSans.variable} dark`}>
         <body>
           <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
@@ -42,6 +44,7 @@ export default function RootLayout({
           <Toaster />
         </body>
       </html>
+    </RouteStoreProvider>
     </ThemeProvider>
     </CSPostHogProvider>
     </ClerkProvider>
