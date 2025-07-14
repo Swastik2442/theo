@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouteStore, type ImageInfo, type AlbumInfo } from '~/stores/routeStore';
+import { useRouteStore } from '~/contexts/routeStoreProvider';
+import { type ImageInfo, type AlbumInfo } from '~/stores/routeStore';
 
 export function ClientImageSync({ imageInfo }: { imageInfo: ImageInfo }) {
   const setImageInfo = useRouteStore((s) => s.setImageInfo);
@@ -14,12 +15,16 @@ export function ClientImageSync({ imageInfo }: { imageInfo: ImageInfo }) {
   return null;
 }
 
-export function ClientAlbumSync({ albumInfo }: { albumInfo: AlbumInfo }) {
-  const setAlbumInfo = useRouteStore((s) => s.setAlbumInfo);
+export function ClientAlbumSync({ albumInfo, images }: { albumInfo: AlbumInfo, images: ImageInfo[] }) {
+  const { setAlbumInfo, setMyAlbumImages } = useRouteStore((s) => ({ setAlbumInfo: s.setAlbumInfo, setMyAlbumImages: s.setMyAlbumImages }));
 
   useEffect(() => {
     setAlbumInfo(albumInfo);
-    return () => setAlbumInfo(null);
+    setMyAlbumImages(images);
+    return () => {
+      setAlbumInfo(null);
+      setMyAlbumImages([]);
+    };
   }, [albumInfo, setAlbumInfo]);
 
   return null;

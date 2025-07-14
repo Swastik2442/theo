@@ -11,6 +11,7 @@ import { CSPostHogProvider } from "~/app/_analytics/providers";
 
 import { ThemeProvider } from "~/contexts/themeProvider";
 import TopNav from "~/components/TopNav";
+import SecondaryNav from "~/components/SecondaryNav";
 import { Toaster } from "~/components/ui/sonner";
 import { RouteStoreProvider } from "~/contexts/routeStoreProvider";
 
@@ -36,6 +37,7 @@ export default function RootLayout({
           <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
           <div className="h-screen">
             <TopNav />
+            <SecondaryNav />
             <div className="grid grid-rows-[auto,1fr]">
               <main className="overflow-y-auto">{children}</main>
             </div>

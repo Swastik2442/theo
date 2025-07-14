@@ -44,7 +44,7 @@ export const CreateAlbumButton = () => {
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
-        <Button type="button" title="Create Album" variant="link" size="icon" className="cursor-pointer">
+        <Button type="button" title="Create Album" variant="link" size="icon" className="cursor-pointer size-4">
           <Plus />
           <span className="sr-only select-none">Create Album</span>
         </Button>
@@ -58,7 +58,7 @@ export const CreateAlbumButton = () => {
             </DialogDescription>
           </DialogHeader>
         <form action={formAction}>
-          <div className="grid gap-4">
+          <div className="grid gap-4 pb-4">
             <div className="grid gap-3">
               <Label htmlFor="album-name">Name</Label>
               <Input
@@ -76,7 +76,6 @@ export const CreateAlbumButton = () => {
               />
             </div>
           </div>
-          {JSON.stringify(state)}
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" title="Cancel" disabled={pending}>Cancel</Button>

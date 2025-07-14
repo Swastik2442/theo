@@ -2,7 +2,6 @@ import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
 
 import { SimpleUploadButton } from "./uploadButton";
-import { CreateAlbumButton } from './createAlbum';
 import { ThemeToggle } from './themeToggle';
 
 export default function TopNav() {
@@ -12,10 +11,9 @@ export default function TopNav() {
         <span className="text-end">Theo</span>
         <span className="text-xs">A Simple Image Gallery</span>
       </Link>
-      <div className="flex flex-col-reverse sm:flex-row pl-4 sm:pl-0 gap-2 items-center">
+      <div className="flex sm:flex-row pl-4 sm:pl-0 gap-3 items-center">
         <SignedIn>
           <SimpleUploadButton />
-          <CreateAlbumButton />
           <ThemeToggle />
           <UserButton />
         </SignedIn>
