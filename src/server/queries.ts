@@ -6,6 +6,7 @@ import z from "zod";
 
 import { db } from "~/server/db";
 import { albums, images, lower, tableName } from "~/server/db/schema";
+import utClient from "~/server/uploadthing";
 import analyticsServerClient from "~/server/analytics";
 import { fileExtension, fileName } from "~/utils/file";
 
@@ -47,7 +48,7 @@ export async function createAlbum(name: AlbumName) {
     name = `${name} (${num})`;
   }
 
-  const createdAlbum = await db.insert(albums).values({
+  const [createdAlbum] = await db.insert(albums).values({
     name,
     userID: user.userId,
   }).returning({ id: albums.id });
@@ -55,10 +56,10 @@ export async function createAlbum(name: AlbumName) {
   analyticsServerClient.capture({
     distinctId: user.userId,
     event: "create_album",
-    properties: { albumId: createdAlbum[0]!.id }
+    properties: { albumId: createdAlbum!.id }
   });
 
-  return createdAlbum[0]!;
+  return createdAlbum!;
 }
 
 type TCreateImage = Pick<typeof images.$inferInsert, "name" | "key" | "url" | "userID" | "albumID">;
@@ -100,15 +101,15 @@ export async function createImage(values: TCreateImage) {
     values.name = `${fileName(values.name)} (${num}).${fileExtension(values.name)}`;
   }
 
-  const createdImage = await db.insert(images).values(values).returning({ id: images.id });
+  const [createdImage] = await db.insert(images).values(values).returning({ id: images.id });
 
   analyticsServerClient.capture({
     distinctId: values.userID,
     event: "create_image",
-    properties: { imageId: createdImage[0]!.id }
+    properties: { imageId: createdImage!.id }
   });
 
-  return createdImage[0]!;
+  return createdImage!;
 }
 
 export async function getMyAlbums() {
@@ -177,7 +178,7 @@ export async function updateAlbum(id: number, options: { name: AlbumName }) {
   });
   if (existingAlbum) throw new Error("Album already exists");
 
-  const updatedAlbum = await db.update(albums).set({ name: options.name }).where(
+  const [updatedAlbum] = await db.update(albums).set({ name: options.name }).where(
     and(eq(albums.id, id), eq(albums.userID, user.userId))
   ).returning({ name: albums.name });
 
@@ -187,7 +188,7 @@ export async function updateAlbum(id: number, options: { name: AlbumName }) {
     properties: { albumId: id }
   });
 
-  return updatedAlbum[0]!;
+  return updatedAlbum!;
 }
 
 const ImageUpdateSchema = z.strictObject({
@@ -213,12 +214,24 @@ export async function updateImage(id: number, options: ImageUpdate) {
   });
   if (existingImage) throw new Error("Image already exists");
 
-  const updatedImage = await db.update(images).set({
-    name: options.name, albumID: options.albumID
-  }).where(eq(images.id, id)).returning({
-    name: images.name, albumID: images.albumID
+  const updatedImage = await db.transaction(async (tx) => {
+    try {
+      await utClient.renameFiles({
+        fileKey: image.key,
+        newName: options.name!
+      });
+    } catch (error) {
+      console.error("Failed to rename file in UploadThing:", error);
+      tx.rollback();
+    }
+
+    const [updatedImage] = await tx.update(images).set({
+      name: options.name!, albumID: options.albumID
+    }).where(eq(images.id, id)).returning({
+      name: images.name, albumID: images.albumID
+    });
+    return updatedImage!;
   });
-  // TODO: Update UploadThing as well
 
   analyticsServerClient.capture({
     distinctId: image.userID,
@@ -226,20 +239,34 @@ export async function updateImage(id: number, options: ImageUpdate) {
     properties: { imageId: id }
   });
 
-  return updatedImage[0]!;
+  return updatedImage;
 }
 
 export async function deleteAlbum(id: number) {
   const user = await auth();
   if (!user.userId) throw new Error("Unauthorized");
 
-  await db.delete(albums).where(
-    and(eq(albums.id, id), eq(albums.userID, user.userId))
-  );
-  await db.delete(images).where(
-    and(eq(images.albumID, id), eq(images.userID, user.userId))
-  );
-  // TODO: Delete from UploadThing as well
+  const albumImages = await getAlbumImages(id);
+  const albumImagesKeys = albumImages.map(img => img.key);
+
+  await db.transaction(async (tx) => {
+    try {
+      const result = await utClient.deleteFiles(albumImagesKeys);
+      if (!result.success || result.deletedCount != albumImagesKeys.length) {
+        throw new Error("Deleting files in UploadThing Unsuccessful");
+      } // Can be improved to handle partial deletions
+    } catch (error) {
+      console.error("Failed to delete files in UploadThing:", error);
+      tx.rollback();
+    }
+
+    await tx.delete(albums).where(
+      and(eq(albums.id, id), eq(albums.userID, user.userId))
+    );
+    await tx.delete(images).where(
+      and(eq(images.albumID, id), eq(images.userID, user.userId))
+    );
+  });
 
   analyticsServerClient.capture({
     distinctId: user.userId,
@@ -250,16 +277,25 @@ export async function deleteAlbum(id: number) {
 
 // BUG: Client sends the form POST (causing getImage to throw Error) after being redirected (GET)
 export async function deleteImage(id: number) {
-  const user = await auth();
-  if (!user.userId) throw new Error("Unauthorized");
+  const image = await getImage(id);
+  if (!image) throw new Error("Image not found");
 
-  await db.delete(images).where(
-    and(eq(images.id, id), eq(images.userID, user.userId))
-  );
-  // TODO: Delete from UploadThing as well
+  await db.transaction(async (tx) => {
+    try {
+      const result = await utClient.deleteFiles(image.key);
+      if (!result.success || result.deletedCount != 1) {
+        throw new Error("Deleting file in UploadThing Unsuccessful");
+      }
+    } catch (error) {
+      console.error("Failed to delete file in UploadThing:", error);
+      tx.rollback();
+    }
+
+    await tx.delete(images).where(eq(images.id, id));
+  });
 
   analyticsServerClient.capture({
-    distinctId: user.userId,
+    distinctId: image.userID,
     event: "delete_image",
     properties: { imageId: id }
   });
