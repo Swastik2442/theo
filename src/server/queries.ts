@@ -98,7 +98,8 @@ export async function createImage(values: TCreateImage) {
       LIMIT 1;
     `);
     const num = result.rows[0]!.n;
-    values.name = `${fileName(values.name)} (${num}).${fileExtension(values.name)}`;
+    const ext = fileExtension(values.name);
+    values.name = `${fileName(values.name)} (${num})${ext.length > 0 ? ext : ""}`;
   }
 
   const [createdImage] = await db.insert(images).values(values).returning({ id: images.id });
@@ -250,21 +251,24 @@ export async function deleteAlbum(id: number) {
   const albumImagesKeys = albumImages.map(img => img.key);
 
   await db.transaction(async (tx) => {
-    try {
-      const result = await utClient.deleteFiles(albumImagesKeys);
-      if (!result.success || result.deletedCount != albumImagesKeys.length) {
-        throw new Error("Deleting files in UploadThing Unsuccessful");
-      } // Can be improved to handle partial deletions
-    } catch (error) {
-      console.error("Failed to delete files in UploadThing:", error);
-      tx.rollback();
+    if (albumImagesKeys.length > 0) {
+      try {
+        const result = await utClient.deleteFiles(albumImagesKeys);
+        if (!result.success || result.deletedCount != albumImagesKeys.length) {
+          throw new Error("Deleting files in UploadThing Unsuccessful");
+        } // Can be improved to handle partial deletions
+      } catch (error) {
+        console.error("Failed to delete files in UploadThing:", error);
+        tx.rollback();
+      }
+
+      await tx.delete(images).where(
+        and(eq(images.albumID, id), eq(images.userID, user.userId))
+      );
     }
 
     await tx.delete(albums).where(
       and(eq(albums.id, id), eq(albums.userID, user.userId))
-    );
-    await tx.delete(images).where(
-      and(eq(images.albumID, id), eq(images.userID, user.userId))
     );
   });
 

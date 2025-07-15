@@ -16,6 +16,6 @@ export function fileName(name: string) {
 }
 
 export function fileExtension(name: string) {
-  if (!containsFileName(name)) return name;
+  if (!containsFileName(name)) return "";
   return path.extname(name);
 }
