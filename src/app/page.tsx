@@ -1,8 +1,6 @@
-import { SignedIn, SignedOut } from "@clerk/nextjs";
-import Image from "next/image";
-import Link from "next/link";
-
-import { getMyImages } from "~/server/queries";
+import { getMyAlbums, getMyImages } from "~/server/queries";
+import { AlbumsAndImagesGrid } from "~/components/grids";
+import { ClientAlbumsAndImagesSync } from "~/components/clientSync";
 
 // Does not Cache the Page
 export const dynamic = "force-dynamic";
@@ -11,39 +9,13 @@ export const dynamic = "force-dynamic";
   TODO: Add "Selecting Images" for Mass Action (zustand?)
   TODO: Pagination or Infinite Scroll
 */
-async function Images() {
+export default async function HomePage() {
+  const albums = await getMyAlbums();
   const images = await getMyImages();
   return (
-    <div className="p-4 flex flex-wrap gap-4 items-center justify-center">
-      {images.map((image) => (
-        <div key={image.id} className="w-48 flex flex-col">
-          <Link href={`/images/${image.id}`}>
-            <Image
-              src={image.url} alt={image.name} title={image.name}
-              width={192} height={192}
-              className="aspect-square object-contain border rounded-md border-accent hover:border-accent-foreground"
-            />
-          </Link>
-          <div className="max-w-48 text-center pt-1">{image.name.replace(/\.[^/.]+$/, "")}</div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function SignInPrompt() {
-  return (
-    <div className="h-full w-full p-4 text-2xl text-center">
-      Sign in to see Images
-    </div>
-  )
-}
-
-export default function HomePage() {
-  return (
     <>
-      <SignedIn><Images /></SignedIn>
-      <SignedOut><SignInPrompt /></SignedOut>
+      <ClientAlbumsAndImagesSync albums={albums} images={images} />
+      <AlbumsAndImagesGrid albums={albums} images={images} />
     </>
   );
 }

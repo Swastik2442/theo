@@ -1,12 +1,16 @@
 import { clerkClient } from "@clerk/nextjs/server";
+import { notFound, redirect } from "next/navigation";
 
 import { deleteImage, getImage } from "~/server/queries";
 import { Button } from "./ui/button";
+import { ClientImageSync } from "./clientSync";
 
 const day = 1000 * 60 * 60 * 24;
 
 export default async function ImageModal({ id }: { id: number }) {
   const image = await getImage(id);
+  if (!image) notFound();
+
   const clerk = await clerkClient();
   const uploader = await clerk.users.getUser(image.userID);
 
@@ -15,6 +19,7 @@ export default async function ImageModal({ id }: { id: number }) {
 
   return (
     <div className="flex flex-col sm:flex-row w-full h-full justify-center">
+      <ClientImageSync imageInfo={{ id: image.id, name: image.name }} />
       <div className="flex flex-shrink items-center justify-center">
         <img src={image.url} alt={image.name} className="flex-shrink max-h-full" />
       </div>
@@ -36,6 +41,7 @@ export default async function ImageModal({ id }: { id: number }) {
           <form action={async () => {
             "use server";
             await deleteImage(id);
+            redirect("/");
           }}>
             <Button type="submit" variant="destructive">Delete</Button>
           </form>

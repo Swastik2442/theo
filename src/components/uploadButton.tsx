@@ -4,20 +4,22 @@ import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 import { toast } from "sonner";
 
+import { useRouteStore } from "~/contexts/routeStoreProvider";
 import { useUploadThing } from "~/utils/uploadthing";
 
-type Input = Parameters<typeof useUploadThing>;
+type UTArgs = Parameters<typeof useUploadThing>;
+type UTInput = Parameters<ReturnType<typeof useUploadThing>['startUpload']>[1];
 
-const useUploadThingInputProps = (...args: Input) => {
+const useUploadThingInputProps = (input: UTInput, ...args: UTArgs) => {
   const $ut = useUploadThing(...args);
 
   const onChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
 
     const selectedFiles = Array.from(e.target.files);
-    await $ut.startUpload(selectedFiles);
+    await $ut.startUpload(selectedFiles, input);
 
-    // const result = await $ut.startUpload(selectedFiles);
+    // const result = await $ut.startUpload(selectedFiles, input);
     // console.log("uploaded files", result);
   };
 
@@ -34,8 +36,10 @@ const useUploadThingInputProps = (...args: Input) => {
 export function SimpleUploadButton() {
   const router = useRouter();
   const posthog = usePostHog();
+  const albumID = useRouteStore((s) => s.albumInfo?.id ?? null);
 
   const { inputProps, isUploading } = useUploadThingInputProps(
+    { albumID },
     "imageUploader",
     {
       onUploadBegin() {
