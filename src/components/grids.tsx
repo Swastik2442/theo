@@ -28,7 +28,7 @@ function AlbumCard({ album }: { album: TAlbum }) {
         style={{ backgroundImage: gradientFromString(`album-${album.id}`) }}
       >
         <p
-          className="max-w-48 text-center -rotate-45 text-white truncate"
+          className="max-w-48 text-center -rotate-45 text-white truncate select-none"
           style={{ textShadow: "1.5px 1.5px 1px black" }}
           title={album.name}
         >{album.name}</p>

@@ -6,7 +6,7 @@ import { ThemeToggle } from './themeToggle';
 
 export default function TopNav() {
   return (
-    <div className="flex w-full items-center justify-between border-b p-4 text-xl font-semibold">
+    <div className="flex w-full items-center justify-between border-b p-4 text-xl font-semibold select-none">
       <Link href="/" className="flex flex-col">
         <span className="text-end">Theo</span>
         <span className="text-xs">A Simple Image Gallery</span>

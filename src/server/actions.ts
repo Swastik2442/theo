@@ -1,8 +1,10 @@
 "use server";
 
 import z from "zod";
+import { redirect } from "next/navigation";
+
 import { env } from "~/env";
-import { AlbumNameSchema, createAlbum } from "~/server/queries";
+import { AlbumNameSchema, createAlbum, deleteAlbum } from "~/server/queries";
 
 type CreateAlbumActionState = {
     status: "init";
@@ -41,4 +43,10 @@ export async function createAlbumAction(_previousState: CreateAlbumActionState, 
         data: (env.NODE_ENV === "development") ? ((error instanceof Error) ? error.message : null) : "Internal Server Error"
     };
   }
+}
+
+export async function deleteAlbumAction(albumId: number) {
+  "use server";
+  await deleteAlbum(albumId);
+  redirect('/');
 }

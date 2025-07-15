@@ -2,9 +2,20 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, SquarePen, Trash2 } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "~/components/ui/alert-dialog"
 import {
   Dialog,
   DialogClose,
@@ -13,11 +24,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger
 } from "~/components/ui/dialog"
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
-import { createAlbumAction } from "~/server/actions";
+import { createAlbumAction, deleteAlbumAction } from "~/server/actions";
 import { toast } from "sonner";
 
 const initialState = { status: "init" } as const;
@@ -88,4 +99,30 @@ export const CreateAlbumButton = () => {
   );
 }
 
-export default CreateAlbumButton;
+export const DeleteAlbumButton = ({ albumId }: { albumId: number; }) => {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button type="button" title="Delete Album" variant="link" size="icon" className="cursor-pointer size-4">
+          <Trash2 />
+          <span className="sr-only select-none">Delete Album</span>
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete your
+            album and remove all the images in it.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={async () => await deleteAlbumAction(albumId)}>
+            Delete Album
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};

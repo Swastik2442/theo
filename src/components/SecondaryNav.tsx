@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useShallow } from 'zustand/react/shallow'
 
@@ -8,7 +9,6 @@ import { useMediaQuery } from "~/hooks/mediaQuery"
 import { useRouteStore } from "~/contexts/routeStoreProvider";
 import {
   Breadcrumb,
-  BreadcrumbEllipsis,
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
@@ -31,7 +31,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import { CreateAlbumButton } from './createAlbum';
+import { CreateAlbumButton, DeleteAlbumButton } from './albumOptions';
 
 // Possible Routes:
 // Home,
@@ -53,13 +53,15 @@ function NavBreadcrumbItem({
       {isDesktop ? (
         <DropdownMenu open={open} onOpenChange={setOpen}>
           <DropdownMenuTrigger
-            className="flex items-center"
+            className="flex items-center whitespace-nowrap"
             aria-label="Toggle menu"
-          >{name}</DropdownMenuTrigger>
+          >
+            {name}
+          </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            {items.map((item, index) => (
-              <DropdownMenuItem key={index}>
-                <Link href={item.href ? item.href : "#"}>
+            {items.map((item) => (
+              <DropdownMenuItem key={`breadcrumb-dropdown-item[${item.href}]`}>
+                <Link href={item.href}>
                   {item.label}
                 </Link>
               </DropdownMenuItem>
@@ -68,7 +70,10 @@ function NavBreadcrumbItem({
         </DropdownMenu>
       ) : (
         <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerTrigger aria-label="Toggle Menu">
+          <DrawerTrigger
+            className="flex items-center whitespace-nowrap"
+            aria-label="Toggle Menu"
+          >
             {name}
           </DrawerTrigger>
           <DrawerContent>
@@ -79,10 +84,10 @@ function NavBreadcrumbItem({
               </DrawerDescription>
             </DrawerHeader>
             <div className="grid gap-1 px-4">
-              {items.map((item, index) => (
+              {items.map((item) => (
                 <Link
-                  key={index}
-                  href={item.href ? item.href : "#"}
+                  key={`breadcrumb-drawer-item[${item.href}]`}
+                  href={item.href}
                   className="py-1 text-sm"
                 >
                   {item.label}
@@ -107,8 +112,7 @@ function NavBreadcrumb() {
   const [item2Open, setItem2Open] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  const { isUnknown, albumInfo, imageInfo, myAlbums, myAlbumImages } = useRouteStore(useShallow((state) => ({
-    isUnknown: state.isUnknown,
+  const { albumInfo, imageInfo, myAlbums, myAlbumImages } = useRouteStore(useShallow((state) => ({
     albumInfo: state.albumInfo,
     imageInfo: state.imageInfo,
     myAlbums: state.myAlbums,
@@ -116,22 +120,23 @@ function NavBreadcrumb() {
   })));
 
   // this is absolutely not even the worst way to do this, but it works for now :)
-  const collection1Name = (!isUnknown && albumInfo == null && imageInfo == null) ? "Home" : (albumInfo != null ? "Albums" : (imageInfo != null ? "Images" : null));
+  const collection1Name = (albumInfo == null && imageInfo == null) ? "Home" : (albumInfo != null ? "Albums" : (imageInfo != null ? "Images" : null));
   const item1Name = collection1Name == "Home" ? null : (collection1Name == "Albums" ? albumInfo!.name : (collection1Name == "Images" ? imageInfo!.name : null));
   const collection2Name = (collection1Name != "Albums" || imageInfo == null) ? null : "Images";
   const item2Name = collection2Name == null ? null : (collection2Name == "Images" ? imageInfo?.name ?? null : null);
 
-  const collection1Items = [{ label: "Home", href: "/" }];
   const item1Items = (collection1Name == "Albums" ? myAlbums.map((album) => ({ label: album.name, href: `/albums/${album.id}` })) : (collection1Name == "Images" ? myAlbumImages.map((image) => ({ label: image.name, href: `/images/${image.id}` })) : null));
   const item2Items = collection2Name == "Images" ? myAlbumImages.map((image) => ({ label: image.name, href: `/images/${image.id}` })) : null;
 
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
+    <Breadcrumb className="select-none overflow-x-auto">
+      <BreadcrumbList className="flex flex-nowrap">
         {collection1Name != null && (collection1Name == "Home" ? (
-          <BreadcrumbItem><BreadcrumbPage className="cursor-default">Home</BreadcrumbPage></BreadcrumbItem>
+          <BreadcrumbItem>
+            <BreadcrumbPage className="cursor-default">Home</BreadcrumbPage>
+          </BreadcrumbItem>
         ) : (
-          <NavBreadcrumbItem name={collection1Name} items={collection1Items} open={collection1Open} setOpen={setCollection1Open} isDesktop={isDesktop} />
+          <NavBreadcrumbItem name={collection1Name} items={[{ label: "Home", href: "/" }]} open={collection1Open} setOpen={setCollection1Open} isDesktop={isDesktop} />
         ))}
         {item1Name != null && (<>
           <BreadcrumbSeparator />
@@ -139,7 +144,9 @@ function NavBreadcrumb() {
         </>)}
         {collection2Name != null && (<>
           <BreadcrumbSeparator />
-          <BreadcrumbItem><BreadcrumbPage>{collection2Name}</BreadcrumbPage></BreadcrumbItem>
+          <BreadcrumbItem>
+            <BreadcrumbPage className="cursor-default">{collection2Name}</BreadcrumbPage>
+          </BreadcrumbItem>
         </>)}
         {item2Name != null && (<>
           <BreadcrumbSeparator />
@@ -151,24 +158,28 @@ function NavBreadcrumb() {
 }
 
 function NavOptions() {
-  const { isUnknown, albumInfo, imageInfo } = useRouteStore(useShallow((state) => ({
-    isUnknown: state.isUnknown,
-    albumInfo: state.albumInfo,
-    imageInfo: state.imageInfo
-  })));
+  const pathName = usePathname();
+  const albumInfo = useRouteStore(useShallow((state) => state.albumInfo));
 
   return (
     <div className="flex items-center justify-center gap-2">
-      {!isUnknown && albumInfo == null && imageInfo == null && <CreateAlbumButton />}
+      {/^\/(?:\?.*)?$/gm.test(pathName) && <CreateAlbumButton />}{/* Home Page */}
+      {/^\/albums\/\d+(?:\?.*)?$/gm.test(pathName) && albumInfo != null && (<> {/* Album Page */}
+        <DeleteAlbumButton albumId={albumInfo.id} />
+      </>)}
     </div>
   );
 }
 
 export function SecondaryNav() {
-  return (
-    <div className="flex items-center justify-between px-4 py-1 border border-red-500">
-        <NavBreadcrumb />
-        <NavOptions />
+  const pathName = usePathname();
+  const isUnknown = useRouteStore(useShallow((state) => state.isUnknown));
+
+  // Renders for these paths only: /, /albums/:id, /images/:id
+  return !isUnknown && /^\/(?:|albums\/\d+|images\/\d+)(?:\?.*)?$/gm.test(pathName) && (
+    <div className="flex items-center justify-between px-4 py- gap-2 border-b border-t hover:border-accent">
+      <NavBreadcrumb />
+      <NavOptions />
     </div>
   );
 }
