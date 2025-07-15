@@ -124,14 +124,45 @@ function NavBreadcrumb() {
     myAlbumImages: state.myAlbumImages
   })));
 
-  // this is absolutely not even the worst way to do this, but it works for now :)
-  const collection1Name = (albumInfo == null && imageInfo == null) ? "Home" : (albumInfo != null ? "Albums" : (imageInfo != null ? "Images" : null));
-  const item1Name = collection1Name == "Home" ? null : (collection1Name == "Albums" ? albumInfo!.name : (collection1Name == "Images" ? imageInfo!.name : null));
-  const collection2Name = (collection1Name != "Albums" || imageInfo == null) ? null : "Images";
-  const item2Name = collection2Name == null ? null : (collection2Name == "Images" ? imageInfo?.name ?? null : null);
+  // There must be a better way to do this
+  let collection1Name: string | null = null;
+  if (albumInfo == null && imageInfo == null) {
+    collection1Name = "Home";
+  } else if (albumInfo != null) {
+    collection1Name = "Albums";
+  } else if (imageInfo != null) {
+    collection1Name = "Images";
+  }
 
-  const item1Items = (collection1Name == "Albums" ? myAlbums.map((album) => ({ label: album.name, href: `/albums/${album.id}` })) : (collection1Name == "Images" ? myAlbumImages.map((image) => ({ label: image.name, href: `/images/${image.id}` })) : null));
-  const item2Items = collection2Name == "Images" ? myAlbumImages.map((image) => ({ label: image.name, href: `/images/${image.id}` })) : null;
+  let item1Name: string | null = null;
+  if (collection1Name === "Home") {
+    item1Name = null;
+  } else if (collection1Name === "Albums") {
+    item1Name = albumInfo!.name;
+  } else if (collection1Name === "Images") {
+    item1Name = imageInfo!.name;
+  }
+
+  let collection2Name: string | null = null;
+  if (collection1Name === "Albums" && imageInfo != null) {
+    collection2Name = "Images";
+  }
+
+  let item2Name: string | null = null;
+  if (collection2Name === "Images") {
+    item2Name = imageInfo?.name ?? null;
+  }
+
+  const item1Items =
+    collection1Name === "Albums"
+    ? myAlbums.map((album) => ({ label: album.name, href: `/albums/${album.id}` }))
+    : collection1Name === "Images"
+    ? myAlbumImages.map((image) => ({ label: image.name, href: `/images/${image.id}` }))
+    : null;
+  const item2Items =
+    collection2Name === "Images"
+    ? myAlbumImages.map((image) => ({ label: image.name, href: `/images/${image.id}` }))
+    : null;
 
   return (
     <Breadcrumb className="select-none overflow-x-auto">
