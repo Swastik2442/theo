@@ -2,7 +2,7 @@ import "~/styles/globals.css";
 
 import { type Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
-import { ClerkProvider } from "@clerk/nextjs";
+import { ClerkProvider, SignedIn, SignedOut } from "@clerk/nextjs";
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
 
@@ -37,10 +37,15 @@ export default function RootLayout({
           <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
           <div className="h-screen">
             <TopNav />
-            <SecondaryNav />
-            <div className="grid grid-rows-[auto,1fr]">
-              <main className="overflow-y-auto">{children}</main>
-            </div>
+            <SignedIn>
+              <SecondaryNav />
+              <div className="grid grid-rows-[auto,1fr]">
+                <main className="overflow-y-auto">{children}</main>
+              </div>
+            </SignedIn>
+            <SignedOut>
+              <p className='p-4 text-2xl text-center'>Sign in to see Images</p>
+            </SignedOut>
           </div>
           {modal}
           <Toaster />
