@@ -16,12 +16,11 @@ function hslColorFromHash(seed: number, offset = 0): string {
 export function gradientFromString(str: string): string {
   const hash = hashString(str);
 
-  const angle = (hash >> 2) % 360;
+  const angle = Math.abs(hash >> 2) % 360;
   const gradientType = [
     'linear-gradient',
-    'radial-gradient',
-    'conic-gradient'
-  ][hash % 3] ?? 'radial-gradient';
+    'radial-gradient'
+  ][hash % 2] ?? 'radial-gradient';
 
   const color1 = hslColorFromHash(hash, 0);
   const color2 = hslColorFromHash(hash, 90);

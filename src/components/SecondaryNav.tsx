@@ -31,7 +31,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import { CreateAlbumButton, DeleteAlbumButton } from './albumOptions';
+import {
+  CreateAlbumButton,
+  UpdateAlbumButton,
+  DeleteAlbumButton
+} from '~/components/albumOptions';
 
 // Possible Routes:
 // Home,
@@ -61,7 +65,7 @@ function NavBreadcrumbItem({
           <DropdownMenuContent align="start">
             {items.map((item) => (
               <DropdownMenuItem key={`breadcrumb-dropdown-item[${item.href}]`}>
-                <Link href={item.href}>
+                <Link href={item.href} onClick={() => setOpen(false)}>
                   {item.label}
                 </Link>
               </DropdownMenuItem>
@@ -88,6 +92,7 @@ function NavBreadcrumbItem({
                 <Link
                   key={`breadcrumb-drawer-item[${item.href}]`}
                   href={item.href}
+                  onClick={() => setOpen(false)}
                   className="py-1 text-sm"
                 >
                   {item.label}
@@ -130,10 +135,10 @@ function NavBreadcrumb() {
 
   return (
     <Breadcrumb className="select-none overflow-x-auto">
-      <BreadcrumbList className="flex flex-nowrap">
+      <BreadcrumbList className="flex flex-nowrap text-gray-500">
         {collection1Name != null && (collection1Name == "Home" ? (
           <BreadcrumbItem>
-            <BreadcrumbPage className="cursor-default">Home</BreadcrumbPage>
+            <BreadcrumbPage className="cursor-default text-gray-500">Home</BreadcrumbPage>
           </BreadcrumbItem>
         ) : (
           <NavBreadcrumbItem name={collection1Name} items={[{ label: "Home", href: "/" }]} open={collection1Open} setOpen={setCollection1Open} isDesktop={isDesktop} />
@@ -145,7 +150,7 @@ function NavBreadcrumb() {
         {collection2Name != null && (<>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage className="cursor-default">{collection2Name}</BreadcrumbPage>
+            <BreadcrumbPage className="cursor-default text-gray-500">{collection2Name}</BreadcrumbPage>
           </BreadcrumbItem>
         </>)}
         {item2Name != null && (<>
@@ -165,6 +170,7 @@ function NavOptions() {
     <div className="flex items-center justify-center gap-2">
       {/^\/(?:\?.*)?$/gm.test(pathName) && <CreateAlbumButton />}{/* Home Page */}
       {/^\/albums\/\d+(?:\?.*)?$/gm.test(pathName) && albumInfo != null && (<> {/* Album Page */}
+        <UpdateAlbumButton albumId={albumInfo.id} albumInfo={albumInfo} />
         <DeleteAlbumButton albumId={albumInfo.id} />
       </>)}
     </div>
@@ -177,7 +183,7 @@ export function SecondaryNav() {
 
   // Renders for these paths only: /, /albums/:id, /images/:id
   return !isUnknown && /^\/(?:|albums\/\d+|images\/\d+)(?:\?.*)?$/gm.test(pathName) && (
-    <div className="flex items-center justify-between px-4 py- gap-2 border-b border-t hover:border-accent">
+    <div className="flex items-center justify-between px-4 py-1 gap-2 border-b border-t hover:border-accent">
       <NavBreadcrumb />
       <NavOptions />
     </div>

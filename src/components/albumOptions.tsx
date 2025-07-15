@@ -3,7 +3,13 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, SquarePen, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
+import {
+  createAlbumAction,
+  updateAlbumAction,
+  deleteAlbumAction
+} from "~/server/actions";
 import { Button } from "~/components/ui/button";
 import {
   AlertDialog,
@@ -28,8 +34,6 @@ import {
 } from "~/components/ui/dialog"
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
-import { createAlbumAction, deleteAlbumAction } from "~/server/actions";
-import { toast } from "sonner";
 
 const initialState = { status: "init" } as const;
 
@@ -98,6 +102,69 @@ export const CreateAlbumButton = () => {
     </Dialog>
   );
 }
+
+export const UpdateAlbumButton = ({ albumId, albumInfo }: { albumId: number; albumInfo: { name: string; }; }) => {
+  const router = useRouter();
+  const [albumName, setAlbumName] = useState(albumInfo.name);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [state, formAction, pending] = useActionState(updateAlbumAction, initialState);
+
+  useEffect(() => {
+    if (state.status == 'error') {
+      toast[state.status](state.message, {
+        duration: 5000,
+        description: state.data,
+      });
+    } else if (state.status == 'success') {
+      router.refresh();
+      setDialogOpen(false);
+      setAlbumName(state.data);
+    }
+  }, [state]);
+
+  return (
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <DialogTrigger asChild>
+        <Button type="button" title="Update Album" variant="link" size="icon" className="cursor-pointer size-4">
+          <SquarePen />
+          <span className="sr-only select-none">Update Album</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Update Album</DialogTitle>
+          </DialogHeader>
+        <form action={formAction}>
+          <div className="grid gap-4 pb-4">
+            <div className="grid gap-3">
+              <input type="hidden" name="id" value={albumId} />
+              <Label htmlFor="album-name">Name</Label>
+              <Input
+                id="album-name"
+                name="name"
+                placeholder="My Album"
+                value={albumName}
+                onChange={(e) => setAlbumName(e.target.value)}
+                type="text"
+                minLength={1}
+                maxLength={256}
+                autoFocus
+                disabled={pending}
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" title="Cancel" disabled={pending}>Cancel</Button>
+            </DialogClose>
+            <Button type="submit" title="Create" disabled={pending}>Update</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 export const DeleteAlbumButton = ({ albumId }: { albumId: number; }) => {
   return (
