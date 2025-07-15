@@ -217,10 +217,13 @@ export async function updateImage(id: number, options: ImageUpdate) {
 
   const updatedImage = await db.transaction(async (tx) => {
     try {
-      await utClient.renameFiles({
+      const result = await utClient.renameFiles({
         fileKey: image.key,
         newName: options.name!
       });
+      if (!result.success) {
+        throw new Error("Renaming file in UploadThing Unsuccessful");
+      }
     } catch (error) {
       console.error("Failed to rename file in UploadThing:", error);
       tx.rollback();
