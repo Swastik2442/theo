@@ -14,6 +14,7 @@ import TopNav from "~/components/TopNav";
 import SecondaryNav from "~/components/SecondaryNav";
 import { Toaster } from "~/components/ui/sonner";
 import { RouteStoreProvider } from "~/contexts/routeStoreProvider";
+import { SelectionStoreProvider } from "~/contexts/selectionStoreProvider";
 
 export const metadata: Metadata = {
   title: "Theo",
@@ -31,17 +32,20 @@ export default function RootLayout({
     <ClerkProvider>
     <CSPostHogProvider>
     <ThemeProvider>
-    <RouteStoreProvider>
       <html lang="en" className={`${GeistSans.variable} dark`}>
         <body>
           <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
           <div className="h-screen">
             <TopNav />
             <SignedIn>
-              <SecondaryNav />
-              <div className="grid grid-rows-[auto,1fr]">
-                <main className="overflow-y-auto">{children}</main>
-              </div>
+              <RouteStoreProvider>
+              <SelectionStoreProvider>
+                <SecondaryNav />
+                <div className="grid grid-rows-[auto,1fr]">
+                  <main className="overflow-y-auto">{children}</main>
+                </div>
+              </SelectionStoreProvider>
+              </RouteStoreProvider>
             </SignedIn>
             <SignedOut>
               <p className='p-4 text-2xl text-center'>Sign in to see Images</p>
@@ -51,7 +55,6 @@ export default function RootLayout({
           <Toaster />
         </body>
       </html>
-    </RouteStoreProvider>
     </ThemeProvider>
     </CSPostHogProvider>
     </ClerkProvider>
