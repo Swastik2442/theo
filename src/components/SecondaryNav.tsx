@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentProps, useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useShallow } from 'zustand/react/shallow'
 
@@ -10,7 +10,6 @@ import {
   Breadcrumb,
   BreadcrumbEllipsis,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
@@ -122,16 +121,18 @@ function NavBreadcrumb() {
   const collection2Name = (collection1Name != "Albums" || imageInfo == null) ? null : "Images";
   const item2Name = collection2Name == null ? null : (collection2Name == "Images" ? imageInfo?.name ?? null : null);
 
-  const collection1Items = [{ label: "Home", href: "/" }, { label: "Albums", href: "/albums" }, { label: "Images", href: "/" }];
+  const collection1Items = [{ label: "Home", href: "/" }];
   const item1Items = (collection1Name == "Albums" ? myAlbums.map((album) => ({ label: album.name, href: `/albums/${album.id}` })) : (collection1Name == "Images" ? myAlbumImages.map((image) => ({ label: image.name, href: `/images/${image.id}` })) : null));
   const item2Items = collection2Name == "Images" ? myAlbumImages.map((image) => ({ label: image.name, href: `/images/${image.id}` })) : null;
 
   return (
     <Breadcrumb>
       <BreadcrumbList>
-        {collection1Name != null && (
+        {collection1Name != null && (collection1Name == "Home" ? (
+          <BreadcrumbItem><BreadcrumbPage className="cursor-default">Home</BreadcrumbPage></BreadcrumbItem>
+        ) : (
           <NavBreadcrumbItem name={collection1Name} items={collection1Items} open={collection1Open} setOpen={setCollection1Open} isDesktop={isDesktop} />
-        )}
+        ))}
         {item1Name != null && (<>
           <BreadcrumbSeparator />
           <NavBreadcrumbItem name={item1Name} items={item1Items!} open={item1Open} setOpen={setItem1Open} isDesktop={isDesktop} />
@@ -150,12 +151,10 @@ function NavBreadcrumb() {
 }
 
 function NavOptions() {
-  const { isUnknown, albumInfo, imageInfo, myAlbums, myAlbumImages } = useRouteStore(useShallow((state) => ({
+  const { isUnknown, albumInfo, imageInfo } = useRouteStore(useShallow((state) => ({
     isUnknown: state.isUnknown,
     albumInfo: state.albumInfo,
-    imageInfo: state.imageInfo,
-    myAlbums: state.myAlbums,
-    myAlbumImages: state.myAlbumImages
+    imageInfo: state.imageInfo
   })));
 
   return (

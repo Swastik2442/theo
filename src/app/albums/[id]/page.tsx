@@ -20,9 +20,7 @@ export default async function Album(
 
   return (
     <>
-      <ClientAlbumSync albumInfo={{ id: album.id, name: album.name }} images={images.map(img => ({
-        id: img.id, name: img.name, key: img.key, url: img.url, albumID: img.albumID
-      }))} />
+      <ClientAlbumSync albumInfo={{ id: album.id, name: album.name }} images={images.map(img => ({ id: img.id, name: img.name }))} />
       <AlbumsAndImagesGrid albums={[]} images={images} />
     </>
   );
