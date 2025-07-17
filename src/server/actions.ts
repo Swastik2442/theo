@@ -9,7 +9,8 @@ import {
   createAlbum,
   updateAlbum,
   deleteAlbum,
-  moveImagesToAlbum
+  moveImagesToAlbum,
+  deleteMultiple
 } from "~/server/queries";
 
 type CreateAlbumActionState = {
@@ -147,4 +148,9 @@ export async function moveImagesAction(_previousState: MoveImagesActionState, fo
         data: (env.NODE_ENV === "development") ? ((error instanceof Error) ? error.message : null) : "Internal Server Error"
     };
   }
+}
+
+export async function deleteMultipleAction(imageIds: number[], albumIds: number[]) {
+  "use server";
+  await deleteMultiple(imageIds, albumIds);
 }

@@ -7,7 +7,7 @@ import { useShallow } from "zustand/react/shallow";
 import { Download, Move, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { moveImagesAction } from "~/server/actions";
+import { deleteMultipleAction, moveImagesAction } from "~/server/actions";
 import { useRouteStore } from "~/contexts/routeStoreProvider";
 import { useSelectionStore } from "~/contexts/selectionStoreProvider";
 import { Button } from "~/components/ui/button";
@@ -51,43 +51,46 @@ export function StopSelectionButton() {
   );
 }
 
-// TODO: Implement delete functionality
 export function DeleteSelectionButton() {
-  const { selectionMode, selectedAlbums, selectedImages } = useSelectionStore(useShallow((s) => ({
+  const router = useRouter();
+  const { selectionMode, selectedAlbums, selectedImages, reset } = useSelectionStore(useShallow((s) => ({
     selectionMode: s.selectedAlbums.size > 0 || s.selectedImages.size > 0,
     selectedAlbums: s.selectedAlbums,
-    selectedImages: s.selectedImages
+    selectedImages: s.selectedImages,
+    reset: s.reset
   })));
   if (!selectionMode) return <></>;
 
-  let deletionTextSpan = "data", deletionFunction = () => {};
+  let deletionTitleSpan = "selection", deletionTextSpan = "data", deletionSuccessText = "Selection deleted";
   if (selectedAlbums.size > 0 && selectedImages.size > 0) {
-    deletionTextSpan = "albums and images";
-    deletionFunction = () => {};
+    deletionTitleSpan = deletionTextSpan = `Album${selectedAlbums.size > 1 ? "s" : ""} and Image${selectedImages.size > 1 ? "s" : ""}`;
+    deletionSuccessText = `${selectedAlbums.size == 1 ? "An Album" : `${selectedAlbums.size} Albums`} and ${selectedImages.size == 1 ? "an Image" : `${selectedImages.size} Images`} deleted`;
   } else if (selectedAlbums.size > 0) {
     if (selectedAlbums.size === 1) {
-      deletionTextSpan = "album and remove all the images in it";
-      deletionFunction = () => {};
+      deletionTitleSpan = "Album";
+      deletionTextSpan = "Album and remove all the Images in it";
+      deletionSuccessText = "Album deleted";
     } else {
-      deletionTextSpan = "albums and remove all the images in them";
-      deletionFunction = () => {};
+      deletionTitleSpan = "Albums";
+      deletionTextSpan = "Albums and remove all the Images in them";
+      deletionSuccessText = `${selectedAlbums.size} Albums deleted`;
     }
   } else if (selectedImages.size > 0) {
     if (selectedImages.size === 1) {
-      deletionTextSpan = "image";
-      deletionFunction = () => {};
+      deletionTitleSpan = deletionTextSpan = "Image";
+      deletionSuccessText = "Image deleted";
     } else {
-      deletionTextSpan = "images";
-      deletionFunction = () => {};
+      deletionTitleSpan = deletionTextSpan = "Images";
+      deletionSuccessText = `${selectedImages.size} Images deleted`;
     }
   }
 
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button type="button" title="Delete Selection" variant="link" size="icon" className="cursor-pointer size-4">
+        <Button type="button" title={`Delete ${deletionTitleSpan}`} variant="link" size="icon" className="cursor-pointer size-4">
           <Trash2 />
-          <span className="sr-only select-none">Delete Selection</span>
+          <span className="sr-only select-none">Delete {deletionTitleSpan}</span>
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
@@ -99,7 +102,12 @@ export function DeleteSelectionButton() {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={deletionFunction}>
+          <AlertDialogAction onClick={async () => {
+            await deleteMultipleAction(Array.from(selectedImages), Array.from(selectedAlbums));
+            toast.info(deletionSuccessText);
+            reset();
+            router.refresh();
+          }}>
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>
