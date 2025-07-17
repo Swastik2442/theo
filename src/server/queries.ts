@@ -1,7 +1,7 @@
 import "server-only";
 
 import { auth } from "@clerk/nextjs/server";
-import { sql, and, eq, isNull } from "drizzle-orm";
+import { sql, and, eq, isNull, inArray } from "drizzle-orm";
 import z from "zod";
 
 import { db } from "~/server/db";
@@ -244,6 +244,55 @@ export async function updateImage(id: number, options: ImageUpdate) {
   });
 
   return updatedImage;
+}
+
+export async function moveImageToAlbum(imageId: number, albumId: Nullable<number>) {
+  const image = await getImage(imageId);
+  if (!image) throw new Error("Image not found");
+
+  if (albumId !== null) {
+    const album = await getAlbum(albumId);
+    if (!album) throw new Error("Album not found");
+  }
+
+  await db.update(images).set({ albumID: albumId }).where(
+    and(eq(images.id, imageId), eq(images.userID, image.userID))
+  );
+
+  analyticsServerClient.capture({
+    distinctId: image.userID,
+    event: "move_image",
+    properties: { imageId, albumId }
+  });
+}
+
+export async function moveImagesToAlbum(imageIds: number[], albumId: Nullable<number>) {
+  if (imageIds.length === 0) throw new Error("No image IDs provided");
+
+  const user = await auth();
+  if (!user.userId) throw new Error("Unauthorized");
+
+  if (albumId !== null) {
+    const album = await getAlbum(albumId);
+    if (!album) throw new Error("Album not found");
+  }
+
+  const [result] = await db
+    .select({ count: sql<string>`count(*)` }).from(images)
+    .where(and(inArray(images.id, imageIds), eq(images.userID, user.userId)));
+  if (Number(result!.count) !== imageIds.length) {
+    throw new Error("Images not found");
+  }
+
+  await db.update(images).set({ albumID: albumId }).where(
+    and(inArray(images.id, imageIds), eq(images.userID, user.userId))
+  );
+
+  analyticsServerClient.capture({
+    distinctId: user.userId,
+    event: "move_images",
+    properties: { imageIds, albumId }
+  });
 }
 
 export async function deleteAlbum(id: number) {

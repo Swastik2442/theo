@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger
-} from "~/components/ui/alert-dialog"
+} from "~/components/ui/alert-dialog";
 import {
   Dialog,
   DialogClose,
@@ -32,9 +32,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger
-} from "~/components/ui/dialog"
-import { Input } from "~/components/ui/input"
-import { Label } from "~/components/ui/label"
+} from "~/components/ui/dialog";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
 
 const initialState = { status: "init" } as const;
 
@@ -159,7 +159,7 @@ export const UpdateAlbumButton = ({ albumId, albumInfo }: { albumId: number; alb
             <DialogClose asChild>
               <Button type="button" variant="outline" title="Cancel" disabled={pending}>Cancel</Button>
             </DialogClose>
-            <Button type="submit" title="Create" disabled={pending}>Update</Button>
+            <Button type="submit" title="Update" disabled={pending}>Update</Button>
           </DialogFooter>
         </Form>
       </DialogContent>

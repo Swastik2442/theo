@@ -4,7 +4,6 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useShallow } from 'zustand/react/shallow'
-import { X } from "lucide-react";
 
 import { useMediaQuery } from "~/hooks/mediaQuery"
 import { useRouteStore } from "~/contexts/routeStoreProvider";
@@ -38,6 +37,12 @@ import {
   UpdateAlbumButton,
   DeleteAlbumButton
 } from '~/components/albumOptions';
+import {
+  DeleteSelectionButton,
+  DownloadSelectionButton,
+  MoveSelectionButton,
+  StopSelectionButton
+} from "~/components/selectionOptions";
 
 // Possible Routes:
 // Home,
@@ -232,16 +237,17 @@ function NavSelectionInfo() {
 }
 
 function NavSelectionOptions() {
-  const reset = useSelectionStore((state) => state.reset);
-
+  const onlyImagesSelected = useSelectionStore(useShallow(
+    (state) => state.selectedAlbums.size == 0 && state.selectedImages.size > 0)
+  );
   return (
     <div className="flex items-center justify-center gap-2">
-      <Button onClick={reset} type="button" title="Stop Selecting" variant="link" size="icon" className="cursor-pointer size-4">
-        <X />
-        <span className="sr-only select-none">Stop Selecting</span>
-      </Button>
+      <DownloadSelectionButton />
+      {onlyImagesSelected && <MoveSelectionButton />}
+      <DeleteSelectionButton />
+      <StopSelectionButton />
     </div>
-  ); // TODO: Download, Delete, Move
+  );
 }
 
 export function SecondaryNav() {
