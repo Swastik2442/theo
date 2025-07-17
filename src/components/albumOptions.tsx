@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import Form from "next/form";
 import { useRouter } from "next/navigation";
 import { Plus, SquarePen, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -72,7 +73,7 @@ export const CreateAlbumButton = () => {
               Images can be added to an album after its creation.
             </DialogDescription>
           </DialogHeader>
-        <form action={formAction}>
+        <Form action={formAction}>
           <div className="grid gap-4 pb-4">
             <div className="grid gap-3">
               <Label htmlFor="album-name">Name</Label>
@@ -97,7 +98,7 @@ export const CreateAlbumButton = () => {
             </DialogClose>
             <Button type="submit" title="Create" disabled={pending}>Create</Button>
           </DialogFooter>
-        </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
@@ -134,7 +135,7 @@ export const UpdateAlbumButton = ({ albumId, albumInfo }: { albumId: number; alb
           <DialogHeader>
             <DialogTitle>Update Album</DialogTitle>
           </DialogHeader>
-        <form action={formAction}>
+        <Form action={formAction}>
           <div className="grid gap-4 pb-4">
             <div className="grid gap-3">
               <input type="hidden" name="id" value={albumId} />
@@ -160,7 +161,7 @@ export const UpdateAlbumButton = ({ albumId, albumInfo }: { albumId: number; alb
             </DialogClose>
             <Button type="submit" title="Create" disabled={pending}>Update</Button>
           </DialogFooter>
-        </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

@@ -35,17 +35,15 @@ export default function RootLayout({
       <html lang="en" className={`${GeistSans.variable} dark`}>
         <body>
           <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
+          <RouteStoreProvider>
+          <SelectionStoreProvider>
           <div className="h-screen">
             <TopNav />
             <SignedIn>
-              <RouteStoreProvider>
-              <SelectionStoreProvider>
                 <SecondaryNav />
                 <div className="grid grid-rows-[auto,1fr]">
                   <main className="overflow-y-auto">{children}</main>
                 </div>
-              </SelectionStoreProvider>
-              </RouteStoreProvider>
             </SignedIn>
             <SignedOut>
               <p className='p-4 text-2xl text-center'>Sign in to see Images</p>
@@ -53,6 +51,8 @@ export default function RootLayout({
           </div>
           {modal}
           <Toaster />
+          </SelectionStoreProvider>
+          </RouteStoreProvider>
         </body>
       </html>
     </ThemeProvider>
