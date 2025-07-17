@@ -10,9 +10,10 @@ export type SelectionState = {
   selectedAlbums: Set<AlbumId>;
 };
 export type RouteActions = {
-  initialized: boolean;
   addAlbum: (albumId: AlbumId) => void;
   addImage: (imageId: ImageId) => void;
+  modifyAlbums: (albumIds: AlbumId[]) => void;
+  modifyImages: (imageIds: ImageId[]) => void;
   removeAlbum: (albumId: AlbumId) => void;
   removeImage: (imageId: ImageId) => void;
   reset: () => void;
@@ -28,11 +29,12 @@ export const initSelectionStore = (): SelectionState => ({ ...defaultInitState }
 
 export const createSelectionStore = (
   initState: SelectionState = defaultInitState,
-) => createStore<SelectionStore>()((set, get) => ({
+) => createStore<SelectionStore>()((set) => ({
   ...initState,
-  get initialized() { return (get().selectedImages.size > 0 || get().selectedAlbums.size > 0) },
   addAlbum: (id) => set((s) => ({ selectedAlbums: new Set(s.selectedAlbums).add(id) })),
   addImage: (id) => set((s) => ({ selectedImages: new Set(s.selectedImages).add(id) })),
+  modifyAlbums: (albumIds) => set(() => ({ selectedAlbums: new Set(albumIds) })),
+  modifyImages: (imageIds) => set(() => ({ selectedImages: new Set(imageIds) })),
   removeAlbum: (id) => {set((s) => {
     const next = new Set(s.selectedAlbums);
     next.delete(id);

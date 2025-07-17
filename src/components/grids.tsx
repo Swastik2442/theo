@@ -12,7 +12,7 @@ type TImage = Pick<typeof images.$inferSelect, "id" | "url" | "name">;
 
 function CustomGrid({ items }: { items: { key: React.Key; component: React.ReactNode; }[] }) {
   return (
-    <div className="p-4 flex flex-wrap gap-4 items-center justify-center">
+    <div className="p-4 flex flex-wrap gap-4 items-center justify-center select-none">
       {items.map((item) => (
         <div key={item.key} className="w-48 flex flex-col">
           {item.component}
@@ -79,7 +79,7 @@ export async function AlbumsAndImagesGrid({ albums, images }: { albums: TAlbum[]
           component: <ImageCard image={image} />
         })),
       ]} />
-      <GridSelectionShortcuts />
+      <GridSelectionShortcuts albums={albums} images={images} />
     </>
   );
 }

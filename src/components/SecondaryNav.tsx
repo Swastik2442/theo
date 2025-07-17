@@ -4,15 +4,17 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useShallow } from 'zustand/react/shallow'
+import { X } from "lucide-react";
 
 import { useMediaQuery } from "~/hooks/mediaQuery"
 import { useRouteStore } from "~/contexts/routeStoreProvider";
+import { useSelectionStore } from "~/contexts/selectionStoreProvider";
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
+  BreadcrumbSeparator
 } from "~/components/ui/breadcrumb";
 import { Button } from "~/components/ui/button";
 import {
@@ -23,13 +25,13 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
-  DrawerTrigger,
+  DrawerTrigger
 } from "~/components/ui/drawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "~/components/ui/dropdown-menu";
 import {
   CreateAlbumButton,
@@ -193,7 +195,7 @@ function NavBreadcrumb() {
   );
 }
 
-function NavOptions() {
+function NavBreadcrumbOptions() {
   const pathName = usePathname();
   const albumInfo = useRouteStore(useShallow((state) => state.albumInfo));
 
@@ -208,15 +210,55 @@ function NavOptions() {
   );
 }
 
+function NavSelectionInfo() {
+  const { selectedAlbumsSize, selectedImagesSize } = useSelectionStore(useShallow((state) => ({
+    selectedAlbumsSize: state.selectedAlbums.size,
+    selectedImagesSize: state.selectedImages.size
+  })));
+
+  return (
+    <p className="select-none overflow-x-auto text-sm text-gray-500">
+      <span>Selected </span>
+      {selectedAlbumsSize == 0 && selectedImagesSize == 0 && <span> nothing</span>}
+      {selectedAlbumsSize > 0 && (
+        <span>{selectedAlbumsSize} Album{selectedAlbumsSize > 1 ? "s" : ""} </span>
+      )}
+      {selectedAlbumsSize > 0 && selectedImagesSize > 0 && <span>and </span>}
+      {selectedImagesSize > 0 && (
+        <span>{selectedImagesSize} Image{selectedImagesSize > 1 ? "s" : ""}</span>
+      )}
+    </p>
+  );
+}
+
+function NavSelectionOptions() {
+  const reset = useSelectionStore((state) => state.reset);
+
+  return (
+    <div className="flex items-center justify-center gap-2">
+      <Button onClick={reset} type="button" title="Stop Selecting" variant="link" size="icon" className="cursor-pointer size-4">
+        <X />
+        <span className="sr-only select-none">Stop Selecting</span>
+      </Button>
+    </div>
+  ); // TODO: Download, Delete, Move
+}
+
 export function SecondaryNav() {
   const pathName = usePathname();
-  const isUnknown = useRouteStore(useShallow((state) => state.isUnknown));
+  const isUnknown = useRouteStore((state) => state.isUnknown);
+  const selectionMode = useSelectionStore((state) => state.selectedAlbums.size > 0 || state.selectedImages.size > 0);
 
   // Renders for these paths only: /, /albums/:id, /images/:id
   return !isUnknown && /^\/(?:|albums\/\d+|images\/\d+)(?:\?.*)?$/gm.test(pathName) && (
     <div className="flex items-center justify-between px-4 py-1 gap-2 border-b border-t hover:border-accent">
-      <NavBreadcrumb />
-      <NavOptions />
+      {selectionMode ? (<>
+        <NavSelectionInfo />
+        <NavSelectionOptions />
+      </>) : (<>
+        <NavBreadcrumb />
+        <NavBreadcrumbOptions />
+      </>)}
     </div>
   );
 }
