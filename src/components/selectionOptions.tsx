@@ -202,7 +202,7 @@ export function MoveSelectionButton() {
 // TODO: Implement download functionality
 export function DownloadSelectionButton() {
   return (
-    <Button onClick={() => {}} type="button" title="Download Selection" variant="link" size="icon" className="cursor-pointer size-4">
+    <Button onClick={() => {toast.info("Functionality not implemented yet")}} type="button" title="Download Selection" variant="link" size="icon" className="cursor-pointer size-4">
       <Download />
       <span className="sr-only select-none">Download Selection</span>
     </Button>

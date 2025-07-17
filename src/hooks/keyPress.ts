@@ -16,6 +16,7 @@ export function useKeyPress(onKeyPress: () => void, config: { key: string; ctrlK
     || (config.altKey && !altKey)
     || (config.metaKey && !metaKey)) return;
 
+    e.preventDefault();
     onKeyPress();
   }, [config, onKeyPress]) as EventListener;
 
