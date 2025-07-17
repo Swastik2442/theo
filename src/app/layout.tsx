@@ -1,3 +1,4 @@
+import "~/polyfills";
 import "~/styles/globals.css";
 
 import { type Metadata } from "next";
@@ -15,6 +16,7 @@ import SecondaryNav from "~/components/SecondaryNav";
 import { Toaster } from "~/components/ui/sonner";
 import { RouteStoreProvider } from "~/contexts/routeStoreProvider";
 import { SelectionStoreProvider } from "~/contexts/selectionStoreProvider";
+import { NormalContextMenu } from "~/components/contextMenus";
 
 export const metadata: Metadata = {
   title: "Theo",
@@ -37,6 +39,7 @@ export default function RootLayout({
           <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
           <RouteStoreProvider>
           <SelectionStoreProvider>
+          <NormalContextMenu>
           <div className="h-screen">
             <TopNav />
             <SignedIn>
@@ -51,6 +54,7 @@ export default function RootLayout({
           </div>
           {modal}
           <Toaster />
+          </NormalContextMenu>
           </SelectionStoreProvider>
           </RouteStoreProvider>
         </body>

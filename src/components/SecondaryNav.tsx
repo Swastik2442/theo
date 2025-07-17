@@ -43,11 +43,6 @@ import {
   MoveSelectionButton,
   StopSelectionButton
 } from "~/components/selectionOptions";
-import {
-  albumRouteRegex,
-  homeRouteRegex,
-  knownRoutesRegex
-} from "~/utils/route";
 
 // Possible Routes:
 // Home,
@@ -211,8 +206,8 @@ function NavBreadcrumbOptions() {
 
   return (
     <div className="flex items-center justify-center gap-2">
-      {homeRouteRegex.test(pathName) && <CreateAlbumButton />}
-      {albumRouteRegex.test(pathName) && albumInfo != null && (<>
+      {/^\/(?:\?.*)?$/gm.test(pathName) && <CreateAlbumButton />}
+      {/^\/albums\/\d+(?:\?.*)?$/gm.test(pathName) && albumInfo != null && (<>
         <UpdateAlbumButton albumId={albumInfo.id} albumInfo={albumInfo} />
         <DeleteAlbumButton albumId={albumInfo.id} />
       </>)}
@@ -261,8 +256,8 @@ export function SecondaryNav() {
   const selectionMode = useSelectionStore((state) => state.selectedAlbums.size > 0 || state.selectedImages.size > 0);
 
   // Renders for these paths only: /, /albums/:id, /images/:id
-  return !isUnknown && knownRoutesRegex.test(pathName) && (
-    <div className="flex items-center justify-between px-4 py-1 gap-2 border-b border-t hover:border-accent">
+  return !isUnknown && /^\/(?:|albums\/\d+|images\/\d+)(?:\?.*)?$/gm.test(pathName) && (
+    <div className="flex items-center justify-between px-4 py-1 gap-2 border-b border-t hover:border-accent print:hidden">
       {selectionMode ? (<>
         <NavSelectionInfo />
         <NavSelectionOptions />
