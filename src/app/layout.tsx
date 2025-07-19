@@ -40,7 +40,7 @@ export default function RootLayout({
           <RouteStoreProvider>
           <SelectionStoreProvider>
           <NormalContextMenu>
-          <div className="h-screen">
+          <div id="root" className="h-screen">
             <TopNav />
             <SignedIn>
                 <SecondaryNav />

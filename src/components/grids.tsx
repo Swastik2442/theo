@@ -2,7 +2,7 @@ import Image from "next/image";
 import { Check } from "lucide-react";
 
 import { albums, images } from "~/server/db/schema"
-import { AlbumCardContainer, GridSelectionShortcuts, ImageCardContainer } from "~/components/containers";
+import { AlbumCardContainer, GridSelectionContainer, GridSelectionShortcuts, ImageCardContainer } from "~/components/containers";
 import { gradientFromString } from "~/utils/color";
 import { fileName } from "~/utils/file";
 import { cn } from "~/utils/css";
@@ -69,16 +69,18 @@ function ImageCard({ image }: { image: TImage }) {
 export async function AlbumsAndImagesGrid({ albums, images }: { albums: TAlbum[]; images: TImage[] }) {
   return (
     <>
-      <CustomGrid items={[
-        ...albums.map((album) => ({
-          key: `album-${album.id}`,
-          component: <AlbumCard album={album} />
-        })),
-        ...images.map((image) => ({
-          key: `image-${image.id}`,
-          component: <ImageCard image={image} />
-        })),
-      ]} />
+      <GridSelectionContainer>
+        <CustomGrid items={[
+          ...albums.map((album) => ({
+            key: `album-${album.id}`,
+            component: <AlbumCard album={album} />
+          })),
+          ...images.map((image) => ({
+            key: `image-${image.id}`,
+            component: <ImageCard image={image} />
+          })),
+        ]} />
+      </GridSelectionContainer>
       <GridSelectionShortcuts albums={albums} images={images} />
     </>
   );

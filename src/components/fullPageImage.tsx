@@ -19,7 +19,7 @@ export default async function ImageModal({ id }: { id: number }) {
 
   return (
     <div className="flex flex-col sm:flex-row w-full h-full justify-center">
-      <ClientImageSync imageInfo={{ id: image.id, name: image.name }} />
+      <ClientImageSync imageInfo={{ id: image.id, name: image.name, key: image.key, url: image.url, albumID: image.albumID }} />
       <div className="flex flex-shrink items-center justify-center">
         <img src={image.url} alt={image.name} className="flex-shrink max-h-full" />
       </div>
