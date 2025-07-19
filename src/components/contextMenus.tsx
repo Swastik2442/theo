@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { albums, images } from "~/server/db/schema"
 import useClientHost from "~/hooks/clientHost";
 import {
   ContextMenu,
@@ -20,6 +21,10 @@ import {
   AlbumSelectionContextMenuItems,
   ImageSelectionContextMenuItems
 } from "~/components/selectionContextMenuItems";
+import { copyImageToClipboard, downloadFromUrl } from "~/utils/file";
+
+type TAlbum = Pick<typeof albums.$inferSelect, "id">;
+type TImage = Pick<typeof images.$inferSelect, "id" | "name" | "url">;
 
 function CommonContextMenuItems() {
   const router = useRouter();
@@ -40,7 +45,7 @@ function CommonContextMenuItems() {
       <ContextMenuSub>
         <ContextMenuSubTrigger inset>More Tools</ContextMenuSubTrigger>
         <ContextMenuSubContent>
-          <ContextMenuItem disabled inset>
+          <ContextMenuItem inset>
             Save Page
             <ContextMenuShortcut>⌘S</ContextMenuShortcut>
           </ContextMenuItem>
@@ -49,7 +54,7 @@ function CommonContextMenuItems() {
             <ContextMenuShortcut>⌘P</ContextMenuShortcut>
           </ContextMenuItem>
           <ContextMenuSeparator />
-          <ContextMenuItem disabled inset>
+          <ContextMenuItem inset>
             Developer Tools
             <ContextMenuShortcut>⌘ Shift I</ContextMenuShortcut>
           </ContextMenuItem>
@@ -72,15 +77,14 @@ export function NormalContextMenu({ children }: { children: React.ReactNode }) {
   );
 }
 
-// TODO: Add Image Link and Save Image as functionality
-export function ImageContextMenu({ imageId, children }: { imageId: number; children: React.ReactNode; }) {
+export function ImageContextMenu({ image, children }: { image: TImage; children: React.ReactNode; }) {
   const fullUrl = useClientHost();
-  const imageLink = `${fullUrl}/images/${imageId}`;
+  const imageLink = `${fullUrl}/images/${image.id}`;
   return (
     <ContextMenu>
       <ContextMenuTrigger>{children}</ContextMenuTrigger>
       <ContextMenuContent className="print:hidden w-72">
-        <ImageSelectionContextMenuItems imageId={imageId} />
+        <ImageSelectionContextMenuItems imageId={image.id} />
         <ContextMenuSeparator />
         <ContextMenuGroup>
           <ContextMenuItem onSelect={() => window.open(imageLink, "_blank")} inset>
@@ -92,19 +96,39 @@ export function ImageContextMenu({ imageId, children }: { imageId: number; child
           }} inset>
             Copy Link
           </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem inset>
-            Open Image in new Tab
-          </ContextMenuItem>
-          <ContextMenuItem inset>
-            Save Image as
-          </ContextMenuItem>
-          <ContextMenuItem inset>
-            Copy Image
-          </ContextMenuItem>
-          <ContextMenuItem inset>
-            Copy Image Link
-          </ContextMenuItem>
+          {image.url && (<>
+            <ContextMenuSeparator />
+            <ContextMenuItem onSelect={() => window.open(image.url, "_blank")} inset>
+              Open Image in new Tab
+            </ContextMenuItem>
+            <ContextMenuItem onSelect={async () => {
+              try {
+                await downloadFromUrl(image.name, image.url);
+              } catch (error) {
+                console.error(error);
+                toast.error("Failed to download image");
+              }
+            }} inset>
+              Save Image as
+            </ContextMenuItem>
+            <ContextMenuItem onSelect={async () => {
+              try {
+                await copyImageToClipboard(image.url);
+                toast.info("Image copied to clipboard");
+              } catch (error) {
+                console.error(error);
+                toast.error("Failed to copy image");
+              }
+            }} inset>
+              Copy Image
+            </ContextMenuItem>
+            <ContextMenuItem onSelect={() => {
+              navigator.clipboard.writeText(image.url);
+              toast.info("Link copied to clipboard");
+            }} inset>
+              Copy Image Link
+            </ContextMenuItem>
+          </>)}
         </ContextMenuGroup>
         <ContextMenuSeparator />
         <CommonContextMenuItems />
@@ -113,14 +137,14 @@ export function ImageContextMenu({ imageId, children }: { imageId: number; child
   );
 }
 
-export function AlbumContextMenu({ albumId, children }: { albumId: number; children: React.ReactNode; }) {
+export function AlbumContextMenu({ album, children }: { album: TAlbum; children: React.ReactNode; }) {
   const fullUrl = useClientHost();
-  const albumLink = `${fullUrl}/albums/${albumId}`;
+  const albumLink = `${fullUrl}/albums/${album.id}`;
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent className="print:hidden w-72">
-        <AlbumSelectionContextMenuItems albumId={albumId} />
+        <AlbumSelectionContextMenuItems albumId={album.id} />
         <ContextMenuSeparator />
         <ContextMenuGroup>
           <ContextMenuItem onSelect={() => window.open(albumLink, "_blank")} inset>

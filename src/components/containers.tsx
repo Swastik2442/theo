@@ -4,13 +4,12 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useShallow } from "zustand/react/shallow";
 
-import { albums, images } from "~/server/db/schema"
 import { useSelectionStore } from "~/contexts/selectionStoreProvider";
 import { useKeyPress } from "~/hooks/keyPress";
 import { AlbumContextMenu, ImageContextMenu } from "~/components/contextMenus";
 
-type TAlbum = Pick<typeof albums.$inferSelect, "id">;
-type TImage = Pick<typeof images.$inferSelect, "id">;
+type TAlbum = Parameters<typeof AlbumContextMenu>['0']['album'];
+type TImage = Parameters<typeof ImageContextMenu>['0']['image'];
 
 export function AlbumCardContainer({ album, children }: { album: TAlbum; children: React.ReactNode; }) {
   const { selectionMode, isSelected, addToSelection, removeFromSelection } = useSelectionStore(useShallow((s) => ({
@@ -21,7 +20,7 @@ export function AlbumCardContainer({ album, children }: { album: TAlbum; childre
   })));
   if (!selectionMode) {
     return (
-      <AlbumContextMenu albumId={album.id}>
+      <AlbumContextMenu album={album}>
         <Link href={`/albums/${album.id}`}>
           {children}
         </Link>
@@ -30,7 +29,7 @@ export function AlbumCardContainer({ album, children }: { album: TAlbum; childre
   }
 
   return (
-    <AlbumContextMenu albumId={album.id}>
+    <AlbumContextMenu album={album}>
       <div className="group" data-selected={isSelected} onClick={() => {
         if (isSelected) {
           removeFromSelection(album.id);
@@ -53,7 +52,7 @@ export function ImageCardContainer({ image, children }: { image: TImage; childre
   })));
   if (!selectionMode) {
     return (
-      <ImageContextMenu imageId={image.id}>
+      <ImageContextMenu image={image}>
         <Link href={`/images/${image.id}`}>
           {children}
         </Link>
@@ -62,7 +61,7 @@ export function ImageCardContainer({ image, children }: { image: TImage; childre
   }
 
   return (
-    <ImageContextMenu imageId={image.id}>
+    <ImageContextMenu image={image}>
       <div className="group" data-selected={isSelected} onClick={() => {
         if (isSelected) {
           removeFromSelection(image.id);
@@ -76,7 +75,7 @@ export function ImageCardContainer({ image, children }: { image: TImage; childre
   );
 }
 
-export function GridSelectionShortcuts({ albums, images }: { albums: TAlbum[]; images: TImage[] }) {
+export function GridSelectionShortcuts({ albums, images }: { albums: Pick<TAlbum, "id">[]; images: Pick<TImage, "id">[] }) {
   const { modifyAlbums, modifyImages, reset } = useSelectionStore(useShallow((s) => ({
     modifyAlbums: s.modifyAlbums,
     modifyImages: s.modifyImages,

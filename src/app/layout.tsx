@@ -49,7 +49,7 @@ export default function RootLayout({
                 </div>
             </SignedIn>
             <SignedOut>
-              <p className='p-4 text-2xl text-center'>Sign in to see Images</p>
+              <p className="p-4 text-2xl text-center cursor-default select-none">Sign in to see Images</p>
             </SignedOut>
           </div>
           {modal}
