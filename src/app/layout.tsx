@@ -40,12 +40,12 @@ export default function RootLayout({
           <RouteStoreProvider>
           <SelectionStoreProvider>
           <NormalContextMenu>
-          <div id="root" className="h-screen">
+          <div className="h-screen flex flex-col">
             <TopNav />
             <SignedIn>
                 <SecondaryNav />
-                <div className="grid grid-rows-[auto,1fr]">
-                  <main className="overflow-y-auto">{children}</main>
+                <div className="grid grid-rows-[auto,1fr] flex-1">
+                  <main className="overflow-y-auto min-h-full">{children}</main>
                 </div>
             </SignedIn>
             <SignedOut>
