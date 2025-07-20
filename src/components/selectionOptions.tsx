@@ -8,8 +8,8 @@ import { Download, Move, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { deleteMultipleAction, moveImagesAction } from "~/server/actions";
-import { useRouteStore } from "~/contexts/routeStoreProvider";
-import { useSelectionStore } from "~/contexts/selectionStoreProvider";
+import { useRouteStore } from "~/contexts/stores/routeStoreProvider";
+import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
 import { Button } from "~/components/ui/button";
 import {
   AlertDialog,

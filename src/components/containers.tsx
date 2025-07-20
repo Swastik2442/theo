@@ -4,7 +4,8 @@ import { MouseEventHandler, useCallback, useEffect, useMemo, useRef, useState } 
 import Link from "next/link";
 import { useShallow } from "zustand/react/shallow";
 
-import { useSelectionStore } from "~/contexts/selectionStoreProvider";
+import { usePressedKeys } from "~/contexts/pressedKeysProvider";
+import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
 import { useKeyPress } from "~/hooks/keyPress";
 import { AlbumContextMenu, ImageContextMenu } from "~/components/contextMenus";
 import { isMacOS } from "~/utils/platform";
@@ -152,13 +153,13 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     modifyAlbums: s.modifyAlbums,
     modifyImages: s.modifyImages
   })));
+  const pressedKeysRef = usePressedKeys().keys;
 
   const [selectionBox, setSelectionBox] = useState<SelectionBox>({ left: 0, top: 0, width: 0, height: 0 });
   const [selectionBoxActive, setSelectionBoxActive] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollFrameRef = useRef<number | null>(null);
-  const pressedKeyRef = useRef<"ctrl/meta" | "shift" | null>(null);
 
   // BUG: The selection box will not get updated if the mouse remains stationary after auto-scroll
   const autoScrollDown = useCallback(() => {
@@ -222,7 +223,6 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
       const width = Math.min(currentWidth, maxWidth);
       const height = Math.min(currentHeight, maxHeight);
       setSelectionBox({ left, top, width, height });
-      pressedKeyRef.current = (isMacOS() ? me.metaKey : me.ctrlKey) ? "ctrl/meta" : (me.shiftKey ? "shift" : null);
 
       // Scroll container if mouse goes out of bounds
       if (currentY > window.innerHeight - 50 && currentY < document.body.scrollHeight) {
@@ -246,7 +246,6 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       setSelectionBoxActive(false);
-      pressedKeyRef.current = null;
       if (scrollFrameRef.current) { // Stop any ongoing auto-scroll
         cancelAnimationFrame(scrollFrameRef.current);
         scrollFrameRef.current = null;
@@ -256,6 +255,20 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   }, [containerRef, setSelectionBox, setSelectionBoxActive]);
+
+  const handleBlur = useCallback(() => {
+    setSelectionBoxActive(false);
+    if (scrollFrameRef.current) {
+      cancelAnimationFrame(scrollFrameRef.current);
+      scrollFrameRef.current = null;
+    }
+  }, []);
+  useEffect(() => {
+    document.addEventListener("blur", handleBlur, true);
+    return () => {
+      document.removeEventListener("blur", handleBlur, true);
+    };
+  }, []);
 
   /** Checks if an element intersects with the selection box */
   const isElementIntersecting = useCallback((element: Element) => {
@@ -280,25 +293,25 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     const selectedAlbumIds = albumItems.filter(isElementIntersecting).map(getElementId);
     const selectedImageIds = imageItems.filter(isElementIntersecting).map(getElementId);
 
-    if (selectedAlbumIds.length === 0 && selectedImageIds.length === 0) {
-      // TODO: Don't reset if ctrl/meta or shift key is pressed
-      modifyAlbums([]);
-      modifyImages([]);
-      return;
-    }
-
     // TODO: Handle Ctrl/Meta/Shift key for multi-selection
-    // if (pressedKeyRef.current === "ctrl/meta") {
-    //   modifyAlbums([...selectedAlbums, ...selectedAlbumIds]);
-    //   modifyImages([...selectedImages, ...selectedImageIds]);
-    // } else if (pressedKeyRef.current === "shift") { // TODO: Get last selected item and select all items in between
-    // } else {
-    //   modifyAlbums(selectedAlbumIds);
-    //   modifyImages(selectedImageIds);
-    // }
-    modifyAlbums(selectedAlbumIds);
-    modifyImages(selectedImageIds);
-  }, [selectionBox, selectionBoxActive]);
+    if (isMacOS() ? pressedKeysRef.current.metaKey : pressedKeysRef.current.ctrlKey) {
+      if (selectedAlbumIds.length > 0)
+        modifyAlbums([...selectedAlbums, ...selectedAlbumIds]);
+      if (selectedImageIds.length > 0)
+        modifyImages([...selectedImages, ...selectedImageIds]);
+    } else if (pressedKeysRef.current.shiftKey) { // TODO: Get last selected item and select all items in between
+    } else {
+      if (selectedAlbumIds.length > 0)
+        modifyAlbums(selectedAlbumIds);
+      if (selectedImageIds.length > 0)
+        modifyImages(selectedImageIds);
+      // If no items were selected, reset selection
+      if (selectedAlbumIds.length === 0 && selectedImageIds.length === 0) {
+        modifyAlbums([]);
+        modifyImages([]);
+      }
+    }
+  }, [selectionBox]);
 
   return (
     <div ref={containerRef} onMouseDown={handleMouseDown} className="min-h-full">

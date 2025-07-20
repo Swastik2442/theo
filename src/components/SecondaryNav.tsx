@@ -6,8 +6,8 @@ import Link from "next/link";
 import { useShallow } from 'zustand/react/shallow'
 
 import { useMediaQuery } from "~/hooks/mediaQuery"
-import { useRouteStore } from "~/contexts/routeStoreProvider";
-import { useSelectionStore } from "~/contexts/selectionStoreProvider";
+import { useRouteStore } from "~/contexts/stores/routeStoreProvider";
+import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
 import {
   Breadcrumb,
   BreadcrumbItem,

@@ -5,7 +5,6 @@ import { albums, images } from '~/server/db/schema';
 type AlbumId = (typeof albums.$inferSelect)["id"];
 type ImageId = (typeof images.$inferSelect)["id"];
 
-
 export type SelectionState = {
   selectedImages: Set<ImageId>;
   selectedAlbums: Set<AlbumId>;

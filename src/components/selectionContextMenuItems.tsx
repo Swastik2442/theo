@@ -3,8 +3,8 @@
 import { usePathname } from "next/navigation";
 import { useShallow } from "zustand/react/shallow";
 
-import { useRouteStore } from "~/contexts/routeStoreProvider";
-import { useSelectionStore } from "~/contexts/selectionStoreProvider";
+import { useRouteStore } from "~/contexts/stores/routeStoreProvider";
+import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
 import { ContextMenuGroup, ContextMenuItem, ContextMenuShortcut } from "~/components/ui/context-menu";
 
 // TODO: Implement cut and paste functionality

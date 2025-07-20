@@ -4,6 +4,10 @@ import { useEffect, useCallback } from "react";
 
 import { isMacOS } from "~/utils/platform";
 
+type KeyPressConfig = Prettify<Partial<Mutable<Pick<KeyboardEvent, "key" | "ctrlKey" | "shiftKey" | "altKey" | "metaKey">>> & {
+  ctrlOrMetaKey?: boolean;
+}>;
+
 /**
  * A Hook that executes a function when a Key is pressed
  *
@@ -13,7 +17,7 @@ import { isMacOS } from "~/utils/platform";
  */
 export function useKeyPress(
   onKeyPress: () => void,
-  config: { key?: string; ctrlKey?: boolean; shiftKey?: boolean; altKey?: boolean; metaKey?: boolean; ctrlOrMetaKey?: boolean }
+  config: KeyPressConfig
 ) {
   const handleKeyPress = useCallback((e: KeyboardEvent) => {
     const { key, ctrlKey, altKey, shiftKey, metaKey } = e;

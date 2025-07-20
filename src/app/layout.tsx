@@ -11,11 +11,11 @@ import { ourFileRouter } from "~/app/api/uploadthing/core";
 import { CSPostHogProvider } from "~/app/_analytics/providers";
 
 import { ThemeProvider } from "~/contexts/themeProvider";
+import { PressedKeysProvider } from "~/contexts/pressedKeysProvider";
+import StoreProviders from "~/contexts/storeProviders";
 import TopNav from "~/components/TopNav";
 import SecondaryNav from "~/components/SecondaryNav";
 import { Toaster } from "~/components/ui/sonner";
-import { RouteStoreProvider } from "~/contexts/routeStoreProvider";
-import { SelectionStoreProvider } from "~/contexts/selectionStoreProvider";
 import { NormalContextMenu } from "~/components/contextMenus";
 
 export const metadata: Metadata = {
@@ -37,16 +37,17 @@ export default function RootLayout({
       <html lang="en" className={`${GeistSans.variable} dark`}>
         <body>
           <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
-          <RouteStoreProvider>
-          <SelectionStoreProvider>
+          <StoreProviders>
           <NormalContextMenu>
           <div className="h-screen flex flex-col">
             <TopNav />
             <SignedIn>
+              <PressedKeysProvider>
                 <SecondaryNav />
                 <div className="grid grid-rows-[auto,1fr] flex-1">
                   <main className="overflow-y-auto min-h-full">{children}</main>
                 </div>
+              </PressedKeysProvider>
             </SignedIn>
             <SignedOut>
               <p className="p-4 text-2xl text-center cursor-default select-none">Sign in to see Images</p>
@@ -55,8 +56,7 @@ export default function RootLayout({
           {modal}
           <Toaster />
           </NormalContextMenu>
-          </SelectionStoreProvider>
-          </RouteStoreProvider>
+          </StoreProviders>
         </body>
       </html>
     </ThemeProvider>

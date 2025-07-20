@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 import { toast } from "sonner";
 
-import { useRouteStore } from "~/contexts/routeStoreProvider";
+import { useRouteStore } from "~/contexts/stores/routeStoreProvider";
 import { useUploadThing } from "~/utils/uploadthing";
 
 type UTArgs = Parameters<typeof useUploadThing>;
