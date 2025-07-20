@@ -32,9 +32,9 @@ export type SelectionActions = {
   /** Keeps/Removes an item from the selection, based on pressed keys */
   removeItem: (item: SelectedItem, pressedKeys: ModifierKeys) => void;
   /** Modifies the selection of albums */
-  modifyAlbums: (albumIds: AlbumId[] | Set<ImageId>) => void;
+  modifyAlbums: (albumIds: AlbumId[] | Set<AlbumId>) => void;
   /** Modifies the selection of images */
-  modifyImages: (imageIds: ImageId[] | Set<AlbumId>) => void;
+  modifyImages: (imageIds: ImageId[] | Set<ImageId>) => void;
   /** Sets the last selected item */
   setLastSelectedItem: (item: SelectedItem) => void;
   /** Resets the selection state */

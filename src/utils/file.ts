@@ -83,10 +83,11 @@ export async function copyImageToClipboard(url: string) {
   img.src = "";
 
   // Convert canvas to PNG Blob
-  const pngBlob = await new Promise<Blob>((resolve) => {
+  const pngBlob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (!blob) {
-        throw new Error("Failed to convert image to PNG");
+        reject(new Error("Failed to convert image to PNG"));
+        return;
       }
       resolve(blob);
     }, 'image/png');
