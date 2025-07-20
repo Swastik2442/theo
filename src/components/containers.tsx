@@ -35,9 +35,11 @@ export function AlbumCardContainer({ album, children }: { album: TAlbum; childre
   } = useSelectionStore(useShallow((s) => ({
     selectionMode: s.selectedAlbums.size > 0 || s.selectedImages.size > 0,
     isSelected: s.selectedAlbums.has(album.id),
-    addToSelection: s.addAlbum,
-    removeFromSelection: s.removeAlbum
+    addToSelection: s.addItem,
+    removeFromSelection: s.removeItem
   })));
+  const pressedKeysRef = usePressedKeys().keys;
+
   const selectionProps = useMemo(
     () => createSelectionProps("album", album.id, isSelected),
     [album.id, isSelected]
@@ -57,9 +59,9 @@ export function AlbumCardContainer({ album, children }: { album: TAlbum; childre
     <AlbumContextMenu album={album}>
       <div className="group" {...selectionProps} onClick={() => {
         if (isSelected) {
-          removeFromSelection(album.id);
+          removeFromSelection({ id: album.id, type: "album" }, pressedKeysRef.current);
         } else {
-          addToSelection(album.id);
+          addToSelection({ id: album.id, type: "album" }, pressedKeysRef.current);
         }
       }}>
         {children}
@@ -78,9 +80,10 @@ export function ImageCardContainer({ image, children }: { image: TImage; childre
   } = useSelectionStore(useShallow((s) => ({
     selectionMode: s.selectedAlbums.size > 0 || s.selectedImages.size > 0,
     isSelected: s.selectedImages.has(image.id),
-    addToSelection: s.addImage,
-    removeFromSelection: s.removeImage
+    addToSelection: s.addItem,
+    removeFromSelection: s.removeItem
   })));
+  const pressedKeysRef = usePressedKeys().keys;
   const selectionProps = useMemo(
     () => createSelectionProps("image", image.id, isSelected),
     [image.id, isSelected]
@@ -100,9 +103,9 @@ export function ImageCardContainer({ image, children }: { image: TImage; childre
     <ImageContextMenu image={image}>
       <div className="group" {...selectionProps} onClick={() => {
         if (isSelected) {
-          removeFromSelection(image.id);
+          removeFromSelection({ id: image.id, type: "image" }, pressedKeysRef.current);
         } else {
-          addToSelection(image.id);
+          addToSelection({ id: image.id, type: "image" }, pressedKeysRef.current);
         }
       }}>
         {children}
@@ -143,7 +146,7 @@ type SelectionBox = {
 /** Container that handles Selection Box for Grid Items */
 export function GridSelectionContainer({ children }: { children: React.ReactNode }) {
   const {
-    setContainerRef,
+    containerRef,
     selectedAlbums,
     selectedImages,
     modifyAlbums,
@@ -151,7 +154,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     setLastSelectedItem,
     reset
   } = useSelectionStore(useShallow((s) => ({
-    setContainerRef: s.setContainerRef,
+    containerRef: s.containerRef,
     selectedAlbums: s.selectedAlbums,
     selectedImages: s.selectedImages,
     lastSelectedItem: s.lastSelectedItem,
@@ -161,12 +164,10 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     reset: s.reset
   })));
   const pressedKeysRef = usePressedKeys().keys;
+  const scrollFrameRef = useRef<number | null>(null);
 
   const [selectionBox, setSelectionBox] = useState<SelectionBox>({ left: 0, top: 0, width: 0, height: 0 });
   const [selectionBoxActive, setSelectionBoxActive] = useState(false);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const scrollFrameRef = useRef<number | null>(null);
 
   // BUG: The selection box will not get updated if the mouse remains stationary after auto-scroll
   const autoScrollDown = useCallback(() => {
@@ -325,21 +326,17 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     }
   }, [selectionBox]);
 
-  // Set the container ref for selection store
-  useEffect(() => {
-    setContainerRef(containerRef);
-    return () => setContainerRef({ current: null });
-  }, []);
-
   return (
-    <div ref={containerRef} onMouseDown={handleMouseDown} className="min-h-full">
-      {children}
+    <>
+      <div ref={containerRef} onMouseDown={handleMouseDown} className="min-h-full">
+        {children}
+      </div>
       {selectionBoxActive && (
         <div
           className="absolute border border-blue-600 bg-blue-400/50 pointer-events-none"
           style={selectionBox}
         ></div>
       )}
-    </div>
+    </>
   );
 }
