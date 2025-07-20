@@ -1,12 +1,13 @@
 "use client";
 
-import { MouseEventHandler, use, useCallback, useEffect, useMemo, useRef } from "react";
+import { MouseEventHandler, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useShallow } from "zustand/react/shallow";
 
 import { useSelectionStore } from "~/contexts/selectionStoreProvider";
 import { useKeyPress } from "~/hooks/keyPress";
 import { AlbumContextMenu, ImageContextMenu } from "~/components/contextMenus";
+import { isMacOS } from "~/utils/platform";
 
 type TAlbum = Parameters<typeof AlbumContextMenu>['0']['album'];
 type TImage = Parameters<typeof ImageContextMenu>['0']['image'];
@@ -131,28 +132,33 @@ export function GridSelectionShortcuts({ albums, images }: { albums: Pick<TAlbum
 }
 
 const scrollSpeed = 5;
+type SelectionBox = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
 
 /** Container that handles Selection Box for Grid Items */
 export function GridSelectionContainer({ children }: { children: React.ReactNode }) {
   const {
-    selectionBox,
-    setSelectionBox,
-    selectionBoxActive,
-    setSelectionBoxActive,
+    selectedAlbums,
+    selectedImages,
     modifyAlbums,
     modifyImages
   } = useSelectionStore(useShallow((s) => ({
-    selectionBox: s.selectionBox,
-    setSelectionBox: s.setSelectionBox,
-    selectionBoxActive: s.selectionBoxActive,
-    setSelectionBoxActive: s.setSelectionBoxActive,
     selectedAlbums: s.selectedAlbums,
     selectedImages: s.selectedImages,
     modifyAlbums: s.modifyAlbums,
     modifyImages: s.modifyImages
   })));
+
+  const [selectionBox, setSelectionBox] = useState<SelectionBox>({ left: 0, top: 0, width: 0, height: 0 });
+  const [selectionBoxActive, setSelectionBoxActive] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollFrameRef = useRef<number | null>(null);
+  const pressedKeyRef = useRef<"ctrl/meta" | "shift" | null>(null);
 
   // BUG: The selection box will not get updated if the mouse remains stationary after auto-scroll
   const autoScrollDown = useCallback(() => {
@@ -180,7 +186,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
 
   const handleMouseDown: MouseEventHandler<HTMLDivElement> = useCallback((e) => {
     // Only handle left mouse button clicks
-    if (e.button !== 0) return;
+    if (e.button != 0) return;
 
     const rootElement = containerRef.current;
     if (!rootElement) return;
@@ -216,6 +222,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
       const width = Math.min(currentWidth, maxWidth);
       const height = Math.min(currentHeight, maxHeight);
       setSelectionBox({ left, top, width, height });
+      pressedKeyRef.current = (isMacOS() ? me.metaKey : me.ctrlKey) ? "ctrl/meta" : (me.shiftKey ? "shift" : null);
 
       // Scroll container if mouse goes out of bounds
       if (currentY > window.innerHeight - 50 && currentY < document.body.scrollHeight) {
@@ -236,13 +243,14 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     };
 
     const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
       setSelectionBoxActive(false);
+      pressedKeyRef.current = null;
       if (scrollFrameRef.current) { // Stop any ongoing auto-scroll
         cancelAnimationFrame(scrollFrameRef.current);
         scrollFrameRef.current = null;
       }
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -272,8 +280,22 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     const selectedAlbumIds = albumItems.filter(isElementIntersecting).map(getElementId);
     const selectedImageIds = imageItems.filter(isElementIntersecting).map(getElementId);
 
-    // TODO: Handle Ctrl/Meta/Shift key for multi-selection
+    if (selectedAlbumIds.length === 0 && selectedImageIds.length === 0) {
+      // TODO: Don't reset if ctrl/meta or shift key is pressed
+      modifyAlbums([]);
+      modifyImages([]);
+      return;
+    }
 
+    // TODO: Handle Ctrl/Meta/Shift key for multi-selection
+    // if (pressedKeyRef.current === "ctrl/meta") {
+    //   modifyAlbums([...selectedAlbums, ...selectedAlbumIds]);
+    //   modifyImages([...selectedImages, ...selectedImageIds]);
+    // } else if (pressedKeyRef.current === "shift") { // TODO: Get last selected item and select all items in between
+    // } else {
+    //   modifyAlbums(selectedAlbumIds);
+    //   modifyImages(selectedImageIds);
+    // }
     modifyAlbums(selectedAlbumIds);
     modifyImages(selectedImageIds);
   }, [selectionBox, selectionBoxActive]);
