@@ -1,6 +1,13 @@
 "use client";
 
-import { MouseEventHandler, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  MouseEventHandler,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 import Link from "next/link";
 import { useShallow } from "zustand/react/shallow";
 
@@ -8,22 +15,16 @@ import { usePressedKeys } from "~/contexts/pressedKeysProvider";
 import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
 import { useKeyPress } from "~/hooks/keyPress";
 import { AlbumContextMenu, ImageContextMenu } from "~/components/contextMenus";
+import {
+  selectionIdAttr,
+  selectionTypeAttr,
+  createSelectionProps,
+  getElementId
+} from "~/utils/selection";
 import { isMacOS } from "~/utils/platform";
 
 type TAlbum = Parameters<typeof AlbumContextMenu>['0']['album'];
 type TImage = Parameters<typeof ImageContextMenu>['0']['image'];
-const selectionTypeAttr = "data-selection-type";
-const selectionIdAttr = "data-selection-id";
-const selectedAttr = "data-selected";
-
-/** Creates Attributes required for Selecting the Item */
-const createSelectionProps = (type: "album" | "image", id: number, selected: boolean) => ({
-  [selectionTypeAttr]: type,
-  [selectionIdAttr]: id,
-  [selectedAttr]: selected
-});
-/** Gets the ID from an element with Selection Attributes */
-const getElementId = (element: Element) => Number(element.getAttribute(selectionIdAttr)!);
 
 /** Container for Album Card that handles Selection State and Context Menu */
 export function AlbumCardContainer({ album, children }: { album: TAlbum; children: React.ReactNode; }) {
@@ -180,7 +181,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
       return;
     }
     scrollFrameRef.current = requestAnimationFrame(autoScrollDown);          // Keep looping
-  }, []);
+  }, [scrollFrameRef]);
   const autoScrollUp = useCallback(() => {
     window.scrollBy(0, -scrollSpeed);
 
@@ -191,7 +192,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
       return;
     }
     scrollFrameRef.current = requestAnimationFrame(autoScrollUp); // Keep looping
-  }, []);
+  }, [scrollFrameRef]);
 
   const handleMouseDown: MouseEventHandler<HTMLDivElement> = useCallback((e) => {
     // Only handle left mouse button clicks
@@ -270,13 +271,11 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
       cancelAnimationFrame(scrollFrameRef.current);
       scrollFrameRef.current = null;
     }
-  }, []);
+  }, [setSelectionBoxActive, scrollFrameRef]);
   useEffect(() => {
     document.addEventListener("blur", handleBlur, true);
-    return () => {
-      document.removeEventListener("blur", handleBlur, true);
-    };
-  }, []);
+    return () => document.removeEventListener("blur", handleBlur, true);
+  }, [handleBlur]);
 
   /** Checks if an element intersects with the selection box */
   const isElementIntersecting = useCallback((element: Element) => {
@@ -302,27 +301,39 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     const selectedImageIds = imageItems.filter(isElementIntersecting).map(getElementId);
 
     // Handle Ctrl/Meta and Shift keys for multi-selection
-    if (pressedKeysRef.current.shiftKey || (isMacOS() ? pressedKeysRef.current.metaKey : pressedKeysRef.current.ctrlKey)) {
+    if (pressedKeysRef.current.shiftKey
+    || (isMacOS() ? pressedKeysRef.current.metaKey : pressedKeysRef.current.ctrlKey)) {
       if (selectedAlbumIds.length > 0) {
         modifyAlbums([...selectedAlbums, ...selectedAlbumIds]);
-        setLastSelectedItem({ id: selectedAlbumIds[selectedAlbumIds.length - 1]!, type: "album" });
       }
       if (selectedImageIds.length > 0) {
         modifyImages([...selectedImages, ...selectedImageIds]);
-        setLastSelectedItem({ id: selectedImageIds[selectedImageIds.length - 1]!, type: "image" });
       }
-    } else { // No modifier keys - replace selection
-      if (selectedAlbumIds.length > 0) {
-        modifyAlbums(selectedAlbumIds);
+      if (selectedAlbumIds.length > 0 || selectedImageIds.length > 0) {
+        if (selectedImageIds.length > 0) {
+          setLastSelectedItem({ id: selectedImageIds[selectedImageIds.length - 1]!, type: "image" });
+        } else {
+          setLastSelectedItem({ id: selectedAlbumIds[selectedAlbumIds.length - 1]!, type: "album" });
+        }
+      }
+      return;
+    }
+
+    // No modifier keys - replace selection
+    if (selectedAlbumIds.length > 0) {
+      modifyAlbums(selectedAlbumIds);
+    }
+    if (selectedImageIds.length > 0) {
+      modifyImages(selectedImageIds);
+    }
+    if (selectedAlbumIds.length > 0 || selectedImageIds.length > 0) {
+      if (selectedImageIds.length > 0) {
+        setLastSelectedItem({ id: selectedImageIds[selectedImageIds.length - 1]!, type: "image" });
+      } else {
         setLastSelectedItem({ id: selectedAlbumIds[selectedAlbumIds.length - 1]!, type: "album" });
       }
-      if (selectedImageIds.length > 0) {
-        modifyImages(selectedImageIds);
-        setLastSelectedItem({ id: selectedImageIds[selectedImageIds.length - 1]!, type: "image" });
-      }
-      if (selectedAlbumIds.length === 0 && selectedImageIds.length === 0) {
-        reset();
-      }
+    } else {
+      reset();
     }
   }, [selectionBox]);
 
