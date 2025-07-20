@@ -143,15 +143,22 @@ type SelectionBox = {
 /** Container that handles Selection Box for Grid Items */
 export function GridSelectionContainer({ children }: { children: React.ReactNode }) {
   const {
+    setContainerRef,
     selectedAlbums,
     selectedImages,
     modifyAlbums,
-    modifyImages
+    modifyImages,
+    setLastSelectedItem,
+    reset
   } = useSelectionStore(useShallow((s) => ({
+    setContainerRef: s.setContainerRef,
     selectedAlbums: s.selectedAlbums,
     selectedImages: s.selectedImages,
+    lastSelectedItem: s.lastSelectedItem,
     modifyAlbums: s.modifyAlbums,
-    modifyImages: s.modifyImages
+    modifyImages: s.modifyImages,
+    setLastSelectedItem: s.setLastSelectedItem,
+    reset: s.reset
   })));
   const pressedKeysRef = usePressedKeys().keys;
 
@@ -293,25 +300,36 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     const selectedAlbumIds = albumItems.filter(isElementIntersecting).map(getElementId);
     const selectedImageIds = imageItems.filter(isElementIntersecting).map(getElementId);
 
-    // TODO: Handle Ctrl/Meta/Shift key for multi-selection
-    if (isMacOS() ? pressedKeysRef.current.metaKey : pressedKeysRef.current.ctrlKey) {
-      if (selectedAlbumIds.length > 0)
+    // Handle Ctrl/Meta and Shift keys for multi-selection
+    if (pressedKeysRef.current.shiftKey || (isMacOS() ? pressedKeysRef.current.metaKey : pressedKeysRef.current.ctrlKey)) {
+      if (selectedAlbumIds.length > 0) {
         modifyAlbums([...selectedAlbums, ...selectedAlbumIds]);
-      if (selectedImageIds.length > 0)
+        setLastSelectedItem({ id: selectedAlbumIds[selectedAlbumIds.length - 1]!, type: "album" });
+      }
+      if (selectedImageIds.length > 0) {
         modifyImages([...selectedImages, ...selectedImageIds]);
-    } else if (pressedKeysRef.current.shiftKey) { // TODO: Get last selected item and select all items in between
-    } else {
-      if (selectedAlbumIds.length > 0)
+        setLastSelectedItem({ id: selectedImageIds[selectedImageIds.length - 1]!, type: "image" });
+      }
+    } else { // No modifier keys - replace selection
+      if (selectedAlbumIds.length > 0) {
         modifyAlbums(selectedAlbumIds);
-      if (selectedImageIds.length > 0)
+        setLastSelectedItem({ id: selectedAlbumIds[selectedAlbumIds.length - 1]!, type: "album" });
+      }
+      if (selectedImageIds.length > 0) {
         modifyImages(selectedImageIds);
-      // If no items were selected, reset selection
+        setLastSelectedItem({ id: selectedImageIds[selectedImageIds.length - 1]!, type: "image" });
+      }
       if (selectedAlbumIds.length === 0 && selectedImageIds.length === 0) {
-        modifyAlbums([]);
-        modifyImages([]);
+        reset();
       }
     }
   }, [selectionBox]);
+
+  // Set the container ref for selection store
+  useEffect(() => {
+    setContainerRef(containerRef);
+    return () => setContainerRef({ current: null });
+  }, []);
 
   return (
     <div ref={containerRef} onMouseDown={handleMouseDown} className="min-h-full">
