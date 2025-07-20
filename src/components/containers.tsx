@@ -130,6 +130,8 @@ export function GridSelectionShortcuts({ albums, images }: { albums: Pick<TAlbum
   return null;
 }
 
+const scrollSpeed = 5;
+
 /** Container that handles Selection Box for Grid Items */
 export function GridSelectionContainer({ children }: { children: React.ReactNode }) {
   const {
@@ -150,6 +152,31 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     modifyImages: s.modifyImages
   })));
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollFrameRef = useRef<number | null>(null);
+
+  // BUG: The selection box will not get updated if the mouse remains stationary after auto-scroll
+  const autoScrollDown = useCallback(() => {
+    window.scrollBy(0, scrollSpeed);
+
+    if (scrollFrameRef.current == null) return;                              // Stop if cancelled
+    if (window.innerHeight + window.scrollY >= document.body.scrollHeight) { // Stop if at bottom of page
+      cancelAnimationFrame(scrollFrameRef.current);
+      scrollFrameRef.current = null;
+      return;
+    }
+    scrollFrameRef.current = requestAnimationFrame(autoScrollDown);          // Keep looping
+  }, []);
+  const autoScrollUp = useCallback(() => {
+    window.scrollBy(0, -scrollSpeed);
+
+    if (scrollFrameRef.current == null) return;                   // Stop if cancelled
+    if (window.scrollY <= 0) {                                    // Stop if at top of page
+      cancelAnimationFrame(scrollFrameRef.current);
+      scrollFrameRef.current = null;
+      return;
+    }
+    scrollFrameRef.current = requestAnimationFrame(autoScrollUp); // Keep looping
+  }, []);
 
   const handleMouseDown: MouseEventHandler<HTMLDivElement> = useCallback((e) => {
     // Only handle left mouse button clicks
@@ -184,18 +211,36 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
       const top = Math.min(startY, currentY);
       const currentWidth = Math.abs(currentX - startX);
       const currentHeight = Math.abs(currentY - startY);
-      const maxWidth = Math.abs(rootRect.right + (2 * window.scrollX) - left);
-      const maxHeight = Math.abs(rootRect.bottom + (2 * window.scrollY) - top);
+      const maxWidth = Math.abs(rootRect.right + window.scrollX - left);
+      const maxHeight = Math.abs(rootRect.bottom + window.scrollY - top);
       const width = Math.min(currentWidth, maxWidth);
       const height = Math.min(currentHeight, maxHeight);
-
-      // TODO: Scroll container if selection box goes out of bounds
-
       setSelectionBox({ left, top, width, height });
+
+      // Scroll container if mouse goes out of bounds
+      if (currentY > window.innerHeight - 50 && currentY < document.body.scrollHeight) {
+        // Near bottom - start scrolling down
+        if (!scrollFrameRef.current) {
+          scrollFrameRef.current = requestAnimationFrame(autoScrollDown);
+        }
+      } else if (currentY < 50 && window.scrollY > 0) {
+        // Near top - start scrolling up
+        if (!scrollFrameRef.current) {
+          scrollFrameRef.current = requestAnimationFrame(autoScrollUp);
+        }
+      } else if (scrollFrameRef.current) {
+        // Within bounds - stop scrolling
+        cancelAnimationFrame(scrollFrameRef.current);
+        scrollFrameRef.current = null;
+      }
     };
 
     const handleMouseUp = () => {
       setSelectionBoxActive(false);
+      if (scrollFrameRef.current) { // Stop any ongoing auto-scroll
+        cancelAnimationFrame(scrollFrameRef.current);
+        scrollFrameRef.current = null;
+      }
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
