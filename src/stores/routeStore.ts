@@ -3,7 +3,7 @@ import { createStore } from 'zustand/vanilla'
 import { albums, images } from '~/server/db/schema';
 
 export type AlbumInfo = Pick<typeof albums.$inferSelect, "id" | "name">;
-export type ImageInfo = Pick<typeof images.$inferSelect, "id" | "name">;
+export type ImageInfo = Pick<typeof images.$inferSelect, "id" | "name" | "key" | "url" | "albumID">;
 
 export type RouteState = {
   isUnknown: boolean;

@@ -6,13 +6,14 @@ import Link from "next/link";
 import { useShallow } from 'zustand/react/shallow'
 
 import { useMediaQuery } from "~/hooks/mediaQuery"
-import { useRouteStore } from "~/contexts/routeStoreProvider";
+import { useRouteStore } from "~/contexts/stores/routeStoreProvider";
+import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
+  BreadcrumbSeparator
 } from "~/components/ui/breadcrumb";
 import { Button } from "~/components/ui/button";
 import {
@@ -23,19 +24,25 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
-  DrawerTrigger,
+  DrawerTrigger
 } from "~/components/ui/drawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "~/components/ui/dropdown-menu";
 import {
   CreateAlbumButton,
   UpdateAlbumButton,
   DeleteAlbumButton
 } from '~/components/albumOptions';
+import {
+  DeleteSelectionButton,
+  DownloadSelectionButton,
+  MoveSelectionButton,
+  StopSelectionButton
+} from "~/components/selectionOptions";
 
 // Possible Routes:
 // Home,
@@ -193,14 +200,14 @@ function NavBreadcrumb() {
   );
 }
 
-function NavOptions() {
+function NavBreadcrumbOptions() {
   const pathName = usePathname();
   const albumInfo = useRouteStore(useShallow((state) => state.albumInfo));
 
   return (
     <div className="flex items-center justify-center gap-2">
-      {/^\/(?:\?.*)?$/gm.test(pathName) && <CreateAlbumButton />}{/* Home Page */}
-      {/^\/albums\/\d+(?:\?.*)?$/gm.test(pathName) && albumInfo != null && (<> {/* Album Page */}
+      {/^\/(?:\?.*)?$/gm.test(pathName) && <CreateAlbumButton />}
+      {/^\/albums\/\d+(?:\?.*)?$/gm.test(pathName) && albumInfo != null && (<>
         <UpdateAlbumButton albumId={albumInfo.id} albumInfo={albumInfo} />
         <DeleteAlbumButton albumId={albumInfo.id} />
       </>)}
@@ -208,15 +215,56 @@ function NavOptions() {
   );
 }
 
+function NavSelectionInfo() {
+  const { selectedAlbumsSize, selectedImagesSize } = useSelectionStore(useShallow((state) => ({
+    selectedAlbumsSize: state.selectedAlbums.size,
+    selectedImagesSize: state.selectedImages.size
+  })));
+
+  return (
+    <p className="select-none overflow-x-auto text-sm text-gray-500">
+      <span>Selected </span>
+      {selectedAlbumsSize == 0 && selectedImagesSize == 0 && <span> nothing</span>}
+      {selectedAlbumsSize > 0 && (
+        <span>{selectedAlbumsSize} Album{selectedAlbumsSize > 1 ? "s" : ""} </span>
+      )}
+      {selectedAlbumsSize > 0 && selectedImagesSize > 0 && <span>and </span>}
+      {selectedImagesSize > 0 && (
+        <span>{selectedImagesSize} Image{selectedImagesSize > 1 ? "s" : ""}</span>
+      )}
+    </p>
+  );
+}
+
+function NavSelectionOptions() {
+  const onlyImagesSelected = useSelectionStore(useShallow(
+    (state) => state.selectedAlbums.size == 0 && state.selectedImages.size > 0)
+  );
+  return (
+    <div className="flex items-center justify-center gap-2">
+      <DownloadSelectionButton />
+      {onlyImagesSelected && <MoveSelectionButton />}
+      <DeleteSelectionButton />
+      <StopSelectionButton />
+    </div>
+  );
+}
+
 export function SecondaryNav() {
   const pathName = usePathname();
-  const isUnknown = useRouteStore(useShallow((state) => state.isUnknown));
+  const isUnknown = useRouteStore((state) => state.isUnknown);
+  const selectionMode = useSelectionStore((state) => state.selectedAlbums.size > 0 || state.selectedImages.size > 0);
 
   // Renders for these paths only: /, /albums/:id, /images/:id
   return !isUnknown && /^\/(?:|albums\/\d+|images\/\d+)(?:\?.*)?$/gm.test(pathName) && (
-    <div className="flex items-center justify-between px-4 py-1 gap-2 border-b border-t hover:border-accent">
-      <NavBreadcrumb />
-      <NavOptions />
+    <div className="flex items-center justify-between px-4 py-1 gap-2 border-b border-t hover:border-accent print:hidden">
+      {selectionMode ? (<>
+        <NavSelectionInfo />
+        <NavSelectionOptions />
+      </>) : (<>
+        <NavBreadcrumb />
+        <NavBreadcrumbOptions />
+      </>)}
     </div>
   );
 }

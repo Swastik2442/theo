@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useRouteStore } from '~/contexts/routeStoreProvider';
+import { useRouteStore } from '~/contexts/stores/routeStoreProvider';
 import { type ImageInfo, type AlbumInfo } from '~/stores/routeStore';
 
 export function ClientAlbumsAndImagesSync({ albums, images }: { albums: AlbumInfo[], images: ImageInfo[] }) {

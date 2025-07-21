@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouteStore } from '~/contexts/routeStoreProvider';
+import { useRouteStore } from '~/contexts/stores/routeStoreProvider';
 
 export default function NotFound() {
   const setIsUnknown = useRouteStore((s) => s.setIsUnknown);

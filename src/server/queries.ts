@@ -1,7 +1,7 @@
 import "server-only";
 
 import { auth } from "@clerk/nextjs/server";
-import { sql, and, eq, isNull } from "drizzle-orm";
+import { sql, and, eq, isNull, inArray } from "drizzle-orm";
 import z from "zod";
 
 import { db } from "~/server/db";
@@ -217,10 +217,13 @@ export async function updateImage(id: number, options: ImageUpdate) {
 
   const updatedImage = await db.transaction(async (tx) => {
     try {
-      await utClient.renameFiles({
+      const result = await utClient.renameFiles({
         fileKey: image.key,
         newName: options.name!
       });
+      if (!result.success) {
+        throw new Error("Renaming file in UploadThing Unsuccessful");
+      }
     } catch (error) {
       console.error("Failed to rename file in UploadThing:", error);
       tx.rollback();
@@ -241,6 +244,59 @@ export async function updateImage(id: number, options: ImageUpdate) {
   });
 
   return updatedImage;
+}
+
+export async function moveImageToAlbum(imageId: number, albumId: Nullable<number>) {
+  const image = await getImage(imageId);
+  if (!image) throw new Error("Image not found");
+
+  if (albumId !== null) {
+    const album = await getAlbum(albumId);
+    if (!album) throw new Error("Album not found");
+  }
+
+  await db.update(images).set({ albumID: albumId }).where(
+    and(eq(images.id, imageId), eq(images.userID, image.userID))
+  );
+
+  analyticsServerClient.capture({
+    distinctId: image.userID,
+    event: "move_image",
+    properties: { imageId, albumId }
+  });
+}
+
+export async function moveImagesToAlbum(imageIds: number[], albumId: Nullable<number>) {
+  if (imageIds.length === 0) throw new Error("No image IDs provided");
+
+  const user = await auth();
+  if (!user.userId) throw new Error("Unauthorized");
+
+  if (albumId !== null) {
+    const album = await getAlbum(albumId);
+    if (!album) throw new Error("Album not found");
+  }
+
+  const err = await db.transaction(async (tx) => {
+    const [check] = await tx
+      .select({ count: sql<string>`count(*)` }).from(images)
+      .where(and(inArray(images.id, imageIds), eq(images.userID, user.userId)));
+    if (Number(check!.count) !== imageIds.length) {
+      tx.rollback();
+      return new Error("Images not found");
+    }
+
+    await tx.update(images).set({ albumID: albumId }).where(
+      and(inArray(images.id, imageIds), eq(images.userID, user.userId))
+    );
+  });
+  if (err) throw err;
+
+  analyticsServerClient.capture({
+    distinctId: user.userId,
+    event: "move_images",
+    properties: { imageIds, albumId }
+  });
 }
 
 export async function deleteAlbum(id: number) {
@@ -302,5 +358,54 @@ export async function deleteImage(id: number) {
     distinctId: image.userID,
     event: "delete_image",
     properties: { imageId: id }
+  });
+}
+
+export async function deleteMultiple(imageIds: number[], albumIds: number[]) {
+  if (imageIds.length === 0 && albumIds.length === 0) {
+    throw new Error("No image or album IDs provided");
+  }
+
+  const user = await auth();
+  if (!user.userId) throw new Error("Unauthorized");
+
+  const err = await db.transaction(async (tx) => {
+    if (albumIds.length > 0) {
+      const [check2] = await tx
+        .select({ count: sql<string>`count(*)` }).from(albums)
+        .where(and(inArray(albums.id, albumIds), eq(albums.userID, user.userId)));
+      if (Number(check2!.count) !== albumIds.length) {
+        tx.rollback();
+        return new Error("Albums not found");
+      }
+
+      await tx.delete(albums).where(
+        and(inArray(albums.id, albumIds), eq(albums.userID, user.userId))
+      );
+      await tx.delete(images).where(
+        and(inArray(images.albumID, albumIds), eq(images.userID, user.userId))
+      );
+    }
+
+    if (imageIds.length > 0) {
+      const [check1] = await tx
+        .select({ count: sql<string>`count(*)` }).from(images)
+        .where(and(inArray(images.id, imageIds), eq(images.userID, user.userId)));
+      if (Number(check1!.count) !== imageIds.length) {
+        tx.rollback();
+        return new Error("Images not found");
+      }
+
+      await tx.delete(images).where(
+        and(inArray(images.id, imageIds), eq(images.userID, user.userId))
+      );
+    }
+  });
+  if (err) throw err;
+
+  analyticsServerClient.capture({
+    distinctId: user.userId,
+    event: "delete_multiple",
+    properties: { imageIds, albumIds }
   });
 }

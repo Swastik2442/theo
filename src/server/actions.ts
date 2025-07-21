@@ -8,7 +8,9 @@ import {
   AlbumNameSchema,
   createAlbum,
   updateAlbum,
-  deleteAlbum
+  deleteAlbum,
+  moveImagesToAlbum,
+  deleteMultiple
 } from "~/server/queries";
 
 type CreateAlbumActionState = {
@@ -102,4 +104,53 @@ export async function deleteAlbumAction(albumId: number) {
   "use server";
   await deleteAlbum(albumId);
   redirect('/');
+}
+
+type MoveImagesActionState = {
+    status: "init";
+} | {
+    status: "success";
+} | {
+  status: "error";
+  message: string;
+  data: string | null;
+};
+
+export async function moveImagesAction(_previousState: MoveImagesActionState, formData: FormData): Promise<MoveImagesActionState> {
+  "use server";
+  try {
+    const imageIds = JSON.parse(formData.get("imageIds") as string) as number[];
+    const parsedImageIds = z.array(z.int().nonnegative()).min(1).safeParse(imageIds);
+    if (!parsedImageIds.success) {
+        return {
+            status: "error",
+            message: "Invalid image IDs",
+            data: z.prettifyError(parsedImageIds.error),
+        };
+    }
+    const albumId = JSON.parse(formData.get("albumId") as string) as Nullable<number>;
+    const parsedAlbumId = z.int().nonnegative().nullable().safeParse(albumId);
+    if (!parsedAlbumId.success) {
+        return {
+            status: "error",
+            message: "Invalid album ID",
+            data: z.prettifyError(parsedAlbumId.error),
+        };
+    }
+
+    await moveImagesToAlbum(parsedImageIds.data, parsedAlbumId.data);
+    return { status: "success" };
+  } catch (error) {
+    console.error("Error moving images:", error);
+    return {
+        status: "error",
+        message: "Failed to move images",
+        data: (env.NODE_ENV === "development") ? ((error instanceof Error) ? error.message : null) : "Internal Server Error"
+    };
+  }
+}
+
+export async function deleteMultipleAction(imageIds: number[], albumIds: number[]) {
+  "use server";
+  await deleteMultiple(imageIds, albumIds);
 }
