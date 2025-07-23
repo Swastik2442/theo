@@ -21,9 +21,9 @@ export function fileExtension(name: string) {
 }
 
 type FetchInput = Parameters<typeof fetch>['0'];
-export async function downloadFromUrl(fileName: string, url: FetchInput, init?: RequestInit) {
+export async function downloadFromUrl(fileName: string, input: FetchInput, init?: RequestInit) {
   // Downloads the file and converts to a Blob
-  const response = await fetch(url, init);
+  const response = await fetch(input, init);
   if (!response.ok) {
     throw new Error(`Failed to download file: ${response.statusText}`);
   }
