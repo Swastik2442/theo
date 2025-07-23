@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { albums, images } from "~/server/db/schema"
@@ -11,10 +10,6 @@ import {
   ContextMenuGroup,
   ContextMenuItem,
   ContextMenuSeparator,
-  ContextMenuShortcut,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
   ContextMenuTrigger
 } from "~/components/ui/context-menu";
 import {
@@ -26,57 +21,7 @@ import { copyImageToClipboard, downloadFromUrl } from "~/utils/file";
 type TAlbum = Pick<typeof albums.$inferSelect, "id">;
 type TImage = Pick<typeof images.$inferSelect, "id" | "name" | "url">;
 
-function CommonContextMenuItems() {
-  const router = useRouter();
-  return (
-    <ContextMenuGroup>
-      <ContextMenuItem onSelect={router.back} inset>
-        Back
-        <ContextMenuShortcut>⌘[</ContextMenuShortcut>
-      </ContextMenuItem>
-      <ContextMenuItem onSelect={router.forward} inset>
-        Forward
-        <ContextMenuShortcut>⌘]</ContextMenuShortcut>
-      </ContextMenuItem>
-      <ContextMenuItem onSelect={router.refresh} inset>
-        Reload
-        <ContextMenuShortcut>⌘R</ContextMenuShortcut>
-      </ContextMenuItem>
-      <ContextMenuSub>
-        <ContextMenuSubTrigger inset>More Tools</ContextMenuSubTrigger>
-        <ContextMenuSubContent>
-          <ContextMenuItem inset>
-            Save Page
-            <ContextMenuShortcut>⌘S</ContextMenuShortcut>
-          </ContextMenuItem>
-          <ContextMenuItem onSelect={() => window.print()} inset>
-            Print Page
-            <ContextMenuShortcut>⌘P</ContextMenuShortcut>
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem inset>
-            Developer Tools
-            <ContextMenuShortcut>⌘ Shift I</ContextMenuShortcut>
-          </ContextMenuItem>
-        </ContextMenuSubContent>
-      </ContextMenuSub>
-    </ContextMenuGroup>
-  );
-}
-
-export function NormalContextMenu({ children }: { children: React.ReactNode }) {
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger>
-        {children}
-      </ContextMenuTrigger>
-      <ContextMenuContent className="print:hidden w-64">
-        <CommonContextMenuItems />
-      </ContextMenuContent>
-    </ContextMenu>
-  );
-}
-
+// TODO: Stop triggering elements under context menu when clicked - onClick={e => e.stopPropagation()}
 export function ImageContextMenu({ image, children }: { image: TImage; children: React.ReactNode; }) {
   const fullUrl = useClientHost();
   const imageLink = `${fullUrl}/images/${image.id}`;
@@ -130,8 +75,6 @@ export function ImageContextMenu({ image, children }: { image: TImage; children:
             </ContextMenuItem>
           </>)}
         </ContextMenuGroup>
-        <ContextMenuSeparator />
-        <CommonContextMenuItems />
       </ContextMenuContent>
     </ContextMenu>
   );
@@ -157,8 +100,6 @@ export function AlbumContextMenu({ album, children }: { album: TAlbum; children:
             Copy Link
           </ContextMenuItem>
         </ContextMenuGroup>
-        <ContextMenuSeparator />
-        <CommonContextMenuItems />
       </ContextMenuContent>
     </ContextMenu>
   );

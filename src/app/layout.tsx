@@ -16,7 +16,6 @@ import StoreProviders from "~/contexts/storeProviders";
 import TopNav from "~/components/TopNav";
 import SecondaryNav from "~/components/SecondaryNav";
 import { Toaster } from "~/components/ui/sonner";
-import { NormalContextMenu } from "~/components/contextMenus";
 
 export const metadata: Metadata = {
   title: "Theo",
@@ -38,7 +37,6 @@ export default function RootLayout({
         <body>
           <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
           <StoreProviders>
-          <NormalContextMenu>
           <div className="h-screen flex flex-col">
             <TopNav />
             <SignedIn>
@@ -55,7 +53,6 @@ export default function RootLayout({
           </div>
           {modal}
           <Toaster />
-          </NormalContextMenu>
           </StoreProviders>
         </body>
       </html>
