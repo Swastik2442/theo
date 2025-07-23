@@ -42,7 +42,7 @@ import {
 } from "~/components/ui/select"
 import { Label } from "~/components/ui/label";
 import { LoadingIcon } from "~/components/ui/icons";
-import { downloadFromUrl } from "~/utils/file";
+import { downloadAsBlob } from "~/utils/file";
 
 export function StopSelectionButton() {
   const reset = useSelectionStore((s) => s.reset);
@@ -228,13 +228,13 @@ export function DownloadSelectionButton() {
             { id: "download-begin", duration: 60000 }
           );
 
-          await downloadFromUrl("download.zip", "/api/download", {
+          await downloadAsBlob("/api/download", {
             method: "POST",
             body: JSON.stringify({
               albums: Array.from(selectedAlbums),
               images: Array.from(selectedImages)
             })
-          });
+          }, "download");
 
           posthog.capture("download_complete");
           toast.dismiss("download-begin");

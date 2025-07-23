@@ -16,7 +16,7 @@ import {
   AlbumSelectionContextMenuItems,
   ImageSelectionContextMenuItems
 } from "~/components/selectionContextMenuItems";
-import { copyImageToClipboard, downloadFromUrl } from "~/utils/file";
+import { copyImageToClipboard, downloadAsBlob, fileName } from "~/utils/file";
 
 type TAlbum = Pick<typeof albums.$inferSelect, "id">;
 type TImage = Pick<typeof images.$inferSelect, "id" | "name" | "url">;
@@ -48,7 +48,7 @@ export function ImageContextMenu({ image, children }: { image: TImage; children:
             </ContextMenuItem>
             <ContextMenuItem onSelect={async () => {
               try {
-                await downloadFromUrl(image.name, image.url);
+                await downloadAsBlob(image.url, {}, fileName(image.name));
               } catch (error) {
                 console.error(error);
                 toast.error("Failed to download image");

@@ -10,37 +10,64 @@ const fileExtensions = [
 const fileRegex = new RegExp(`\\b[\\w\\-]+\\.(${fileExtensions.join('|')})\\b`, 'i');
 const containsFileName = (str: string) => fileRegex.test(str);
 
+/**
+ * Extracts the File Name from File Name with known Extensions
+ * @param name File Name with Extension
+ * @returns File Name without Extension if Extension is known else {@link name}
+ */
 export function fileName(name: string) {
   if (!containsFileName(name)) return name;
   return path.basename(name, path.extname(name));
 }
 
+/**
+ * Extracts the File Extension from File Name with known Extensions
+ * @param name File Name with Extension
+ * @returns File Extension if Extension is known else Empty String
+ */
 export function fileExtension(name: string) {
   if (!containsFileName(name)) return "";
   return path.extname(name);
 }
 
+/**
+ * Prompts the User to download a File from a URL
+ * @param url URL to download from
+ * @param fileName Optional Name for the File
+ */
+export function downloadFromUrl(url: string, fileName: string = "") {
+  const element = document.createElement('a');
+  element.setAttribute('href', url);
+  element.setAttribute('download', fileName);
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
+}
+
 type FetchInput = Parameters<typeof fetch>['0'];
-export async function downloadFromUrl(fileName: string, input: FetchInput, init?: RequestInit) {
+/**
+ * Downloads a File as a Blob and prompts the User to download the Blob
+ * @param input URL to download from
+ * @param init Request Init Parameters
+ * @param fileName Optional Name for the Name
+ */
+export async function downloadAsBlob(input: FetchInput, init?: RequestInit, fileName: string = "") {
   // Downloads the file and converts to a Blob
   const response = await fetch(input, init);
   if (!response.ok) {
     throw new Error(`Failed to download file: ${response.statusText}`);
   }
   const blob = await response.blob();
+
   const objectUrl = URL.createObjectURL(blob);
-
-  // Create a link element to trigger the download
-  const element = document.createElement('a');
-  element.setAttribute('href', objectUrl);
-  element.setAttribute('download', fileName);
-  document.body.appendChild(element);
-  element.click();
-  document.body.removeChild(element);
-
+  downloadFromUrl(objectUrl, fileName);
   URL.revokeObjectURL(objectUrl);
 }
 
+/**
+ * Copies an Image from a URL to the Clipboard
+ * @param url URL to load the Image from
+ */
 export async function copyImageToClipboard(url: string) {
   // Downloads the image // TODO: Can be optimized to avoid downloading by storing in cache
   const data = await fetch(url);

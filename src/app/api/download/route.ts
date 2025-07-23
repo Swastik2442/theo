@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   await Promise.all([
     // For each image, fetch it & append its stream directly
-    ...(selectedImages.map(async (image) => {
+    await Promise.all(selectedImages.map(async (image) => {
       const remoteRes = await fetch(image.url);
       const options: archiver.ZipEntryData = { name: image.name, date: image.updatedAt ?? image.createdAt };
 
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     })),
 
     // For each album, fetch its images & append their stream directly
-    ...(selectedAlbums.map(async (album) => {
+    await Promise.all(selectedAlbums.map(async (album) => {
       const albumImages = await db.query.images.findMany({
         where: (model, { eq, and }) => and(
           eq(model.albumID, album.id),
