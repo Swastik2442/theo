@@ -40,6 +40,7 @@ import {
   SelectValue,
 } from "~/components/ui/select"
 import { Label } from "~/components/ui/label";
+import { downloadFromUrl } from "~/utils/file";
 
 export function StopSelectionButton() {
   const reset = useSelectionStore((s) => s.reset);
@@ -201,8 +202,37 @@ export function MoveSelectionButton() {
 
 // TODO: Implement download functionality
 export function DownloadSelectionButton() {
+  const { selectedAlbums, selectedImages } = useSelectionStore(useShallow((s) => ({
+    selectedAlbums: s.selectedAlbums,
+    selectedImages: s.selectedImages
+  })));
+  const [downloading, setDownloading] = useState(false);
   return (
-    <Button onClick={() => {toast.info("Functionality not implemented yet")}} type="button" title="Download Selection" variant="link" size="icon" className="cursor-pointer size-4">
+    <Button
+      onClick={async () => {
+        setDownloading(true);
+        try {
+          await downloadFromUrl("download.zip", "/api/download", {
+            method: "POST",
+            body: JSON.stringify({
+              albums: Array.from(selectedAlbums),
+              images: Array.from(selectedImages)
+            })
+          });
+        } catch (err) {
+          console.log("Error while downloading:", err);
+          toast.error("An error occurred while downloading");
+        } finally {
+          setDownloading(false);
+        }
+      }}
+      disabled={downloading}
+      className="cursor-pointer size-4"
+      title="Download Selection"
+      variant="link"
+      size="icon"
+      type="button"
+    >
       <Download />
       <span className="sr-only select-none">Download Selection</span>
     </Button>

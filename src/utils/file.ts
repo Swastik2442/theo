@@ -20,9 +20,10 @@ export function fileExtension(name: string) {
   return path.extname(name);
 }
 
-export async function downloadFromUrl(fileName: string, url: string) {
+type FetchInput = Parameters<typeof fetch>['0'];
+export async function downloadFromUrl(fileName: string, url: FetchInput, init?: RequestInit) {
   // Downloads the file and converts to a Blob
-  const response = await fetch(url);
+  const response = await fetch(url, init);
   if (!response.ok) {
     throw new Error(`Failed to download file: ${response.statusText}`);
   }
