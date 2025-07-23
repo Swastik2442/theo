@@ -202,7 +202,6 @@ export function MoveSelectionButton() {
   );
 }
 
-// TODO: Implement download functionality
 export function DownloadSelectionButton() {
   const posthog = usePostHog();
   const { selectedAlbums, selectedImages } = useSelectionStore(useShallow((s) => ({
@@ -234,7 +233,7 @@ export function DownloadSelectionButton() {
               albums: Array.from(selectedAlbums),
               images: Array.from(selectedImages)
             })
-          }, "download");
+          }, "download.zip", [{ accept: { "application/zip": ['.zip'] } }]);
 
           posthog.capture("download_complete");
           toast.dismiss("download-begin");
