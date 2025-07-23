@@ -139,13 +139,13 @@ export async function downloadAsBlob(input: FetchInput, init?: RequestInit, sugg
       const writable = await handle.createWritable();
 
       const reader = response.body!.getReader()
-      const pump = () => reader.read().then(async function process({ value, done }): Promise<void> {
+      const pump = () => reader.read().then(async ({ value, done }): Promise<void> => {
         if (done) return Promise.resolve();
-        writable.write(value!.buffer);
+        writable.write(value!);
 
         byteLength += value.byteLength;
         writable.seek(byteLength);
-        return reader.read().then(process);
+        return pump();
       });
       pump().then(() => writable.close());
       return;
@@ -153,7 +153,7 @@ export async function downloadAsBlob(input: FetchInput, init?: RequestInit, sugg
       if (err instanceof Error) {
         // Fail silently if the user has simply canceled the dialog
         if (err.name !== 'AbortError') {
-          console.error(err.name, err.message);
+          throw err;
         }
         return;
       }

@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       eq(model.userID, user.userId)
     )
   });
-  if (selectedImages.length != images.length) {
+  if (selectedImages.length !== images.length) {
     return new Response("Invalid request body", { status: 400 });
   }
 
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       eq(model.userID, user.userId)
     )
   });
-  if (selectedAlbums.length != albums.length) {
+  if (selectedAlbums.length !== albums.length) {
     return new Response("Invalid request body", { status: 400 });
   }
 

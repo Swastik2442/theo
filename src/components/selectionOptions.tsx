@@ -227,7 +227,7 @@ export function DownloadSelectionButton() {
             { id: "download-begin", duration: 60000 }
           );
 
-          await downloadAsBlob("/api/download", {
+          await downloadAsBlob("/api/downloadthing", {
             method: "POST",
             body: JSON.stringify({
               albums: Array.from(selectedAlbums),
