@@ -3,6 +3,7 @@ import "server-only";
 import { auth } from "@clerk/nextjs/server";
 import { sql, and, eq, isNull, inArray } from "drizzle-orm";
 import z from "zod";
+import isValidFilename from 'valid-filename';
 
 import { db } from "~/server/db";
 import { albums, images, lower, tableName } from "~/server/db/schema";
@@ -14,7 +15,7 @@ function escapeRegex(str: string) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export const AlbumNameSchema = z.string().trim().min(1).max(256);
+export const AlbumNameSchema = z.string().trim().min(1).max(192).refine(isValidFilename);
 export type AlbumName = z.infer<typeof AlbumNameSchema>;
 
 export async function createAlbum(name: AlbumName) {

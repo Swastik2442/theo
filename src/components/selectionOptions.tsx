@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import Form from "next/form";
 import { useRouter } from "next/navigation";
+import { usePostHog } from "posthog-js/react";
 import { useShallow } from "zustand/react/shallow";
 import { Download, Move, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -40,6 +41,8 @@ import {
   SelectValue,
 } from "~/components/ui/select"
 import { Label } from "~/components/ui/label";
+import { LoadingIcon } from "~/components/ui/icons";
+import { downloadAsBlob } from "~/utils/file";
 
 export function StopSelectionButton() {
   const reset = useSelectionStore((s) => s.reset);
@@ -199,10 +202,64 @@ export function MoveSelectionButton() {
   );
 }
 
-// TODO: Implement download functionality
 export function DownloadSelectionButton() {
+  const posthog = usePostHog();
+  const { selectedAlbums, selectedImages } = useSelectionStore(useShallow((s) => ({
+    selectedAlbums: s.selectedAlbums,
+    selectedImages: s.selectedImages
+  })));
+  const [downloading, setDownloading] = useState(false);
+
   return (
-    <Button onClick={() => {toast.info("Functionality not implemented yet")}} type="button" title="Download Selection" variant="link" size="icon" className="cursor-pointer size-4">
+    <Button
+      onClick={async () => {
+        if (downloading) return;
+        try {
+          posthog.capture("download_begin");
+          setDownloading(true);
+          toast(
+            (
+              <div className="flex gap-2 items-center">
+                <LoadingIcon className="size-6" />
+                <span className="text-lg">Downloading...</span>
+              </div>
+            ),
+            { id: "download-begin", duration: 60000 }
+          );
+
+          await downloadAsBlob("/api/downloadthing", {
+            method: "POST",
+            body: JSON.stringify({
+              albums: Array.from(selectedAlbums),
+              images: Array.from(selectedImages)
+            })
+          }, "download.zip", [{ accept: { "application/zip": ['.zip'] } }]);
+
+          posthog.capture("download_complete");
+          toast.dismiss("download-begin");
+          toast(
+            (
+              <span className="text-lg">
+                Download complete!
+              </span>
+            ),
+            { duration: 5000 }
+          );
+        } catch (error) {
+          posthog.capture("download_error", { error });
+          toast.dismiss("download-begin");
+          toast.error("Download failed. Please try again later.");
+        } finally {
+          setDownloading(false);
+        }
+      }}
+      disabled={downloading}
+      className="cursor-pointer size-4"
+      title="Download Selection"
+      variant="link"
+      size="icon"
+      type="button"
+    >
       <Download />
       <span className="sr-only select-none">Download Selection</span>
     </Button>

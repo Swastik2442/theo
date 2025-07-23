@@ -29,8 +29,12 @@ export type SelectionState = {
 export type SelectionActions = {
   /** Adds an item to the selection, based on pressed keys */
   addItem: (item: SelectedItem, pressedKeys: ModifierKeys) => void;
+  addImage: (id: ImageId) => void;
+  addAlbum: (id: AlbumId) => void;
   /** Keeps/Removes an item from the selection, based on pressed keys */
   removeItem: (item: SelectedItem, pressedKeys: ModifierKeys) => void;
+  removeImage: (id: ImageId) => void;
+  removeAlbum: (id: AlbumId) => void;
   /** Modifies the selection of albums */
   modifyAlbums: (albumIds: AlbumId[] | Set<AlbumId>) => void;
   /** Modifies the selection of images */
@@ -165,8 +169,20 @@ export const createSelectionStore = (
         const updatedImages = new Set(s.selectedImages);
         updatedImages.delete(item.id);
         return { selectedImages: updatedImages, lastSelectedItem: { id: item.id, type: "image" } };
-      }
-    }),
+    }
+  }),
+  addAlbum: (id) => set((s) => ({ selectedAlbums: new Set(s.selectedAlbums).add(id), lastSelectedItem: { id, type: "album" } })),
+  addImage: (id) => set((s) => ({ selectedImages: new Set(s.selectedImages).add(id), lastSelectedItem: { id, type: "image" } })),
+  removeAlbum: (id) => {set((s) => {
+    const next = new Set(s.selectedAlbums);
+    next.delete(id);
+    return { selectedAlbums: next, lastSelectedItem: { id, type: "album" } };
+  })},
+  removeImage: (id) => set((s) => {
+    const next = new Set(s.selectedImages);
+    next.delete(id);
+    return { selectedImages: next, lastSelectedItem: { id, type: "image" } };
+  }),
   modifyAlbums: (albumIds) => set(() => ({ selectedAlbums: Array.isArray(albumIds) ? new Set(albumIds) : albumIds })),
   modifyImages: (imageIds) => set(() => ({ selectedImages: Array.isArray(imageIds) ? new Set(imageIds) : imageIds })),
   setLastSelectedItem: (item: SelectedItem) => set((s) => {
