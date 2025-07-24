@@ -147,6 +147,7 @@ type SelectionBox = {
 /** Container that handles Selection Box for Grid Items */
 export function GridSelectionContainer({ children }: { children: React.ReactNode }) {
   const {
+    selectingEnabled,
     containerRef,
     selectedAlbums,
     selectedImages,
@@ -155,6 +156,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     setLastSelectedItem,
     reset
   } = useSelectionStore(useShallow((s) => ({
+    selectingEnabled: s.selectingEnabled,
     containerRef: s.containerRef,
     selectedAlbums: s.selectedAlbums,
     selectedImages: s.selectedImages,
@@ -174,7 +176,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
   const autoScrollDown = useCallback(() => {
     window.scrollBy(0, scrollSpeed);
 
-    if (scrollFrameRef.current == null) return;                              // Stop if cancelled
+    if (!selectingEnabled || scrollFrameRef.current == null) return;         // Stop if cancelled
     if (window.innerHeight + window.scrollY >= document.body.scrollHeight) { // Stop if at bottom of page
       cancelAnimationFrame(scrollFrameRef.current);
       scrollFrameRef.current = null;
@@ -185,18 +187,18 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
   const autoScrollUp = useCallback(() => {
     window.scrollBy(0, -scrollSpeed);
 
-    if (scrollFrameRef.current == null) return;                   // Stop if cancelled
-    if (window.scrollY <= 0) {                                    // Stop if at top of page
+    if (!selectingEnabled || scrollFrameRef.current == null) return; // Stop if cancelled
+    if (window.scrollY <= 0) {                                       // Stop if at top of page
       cancelAnimationFrame(scrollFrameRef.current);
       scrollFrameRef.current = null;
       return;
     }
-    scrollFrameRef.current = requestAnimationFrame(autoScrollUp); // Keep looping
+    scrollFrameRef.current = requestAnimationFrame(autoScrollUp);    // Keep looping
   }, [scrollFrameRef]);
 
   const handleMouseDown: MouseEventHandler<HTMLDivElement> = useCallback((e) => {
-    // Only handle left mouse button clicks
-    if (e.button != 0) return;
+    // Only handle if selecting functionality is enabled or on left mouse button clicks
+    if (!selectingEnabled || e.button != 0) return;
 
     const rootElement = containerRef.current;
     if (!rootElement) return;
@@ -292,7 +294,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
   // Check which items intersect with selection
   useEffect(() => {
     const containerDiv = containerRef.current;
-    if (!selectionBoxActive || !containerDiv) return;
+    if (!selectingEnabled || !selectionBoxActive || !containerDiv) return;
 
     const albumItems = Array.from(containerDiv.querySelectorAll(`*[${selectionTypeAttr}='album']`));
     const imageItems = Array.from(containerDiv.querySelectorAll(`*[${selectionTypeAttr}='image']`));

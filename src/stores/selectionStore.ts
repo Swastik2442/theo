@@ -25,6 +25,8 @@ export type SelectionState = {
   lastSelectedItem: Nullable<SelectedItem>;
   /** Reference to the container element where selection is applied */
   containerRef: React.RefObject<Nullable<HTMLDivElement>>;
+  /** Whether Selecting Functionality is Enabled */
+  selectingEnabled: boolean;
 };
 export type SelectionActions = {
   /** Adds an item to the selection, based on pressed keys */
@@ -41,6 +43,8 @@ export type SelectionActions = {
   modifyImages: (imageIds: ImageId[] | Set<ImageId>) => void;
   /** Sets the last selected item */
   setLastSelectedItem: (item: SelectedItem) => void;
+  /** Enables/Disables Selecting Functionality */
+  setSelectingEnabled: (value: boolean) => void;
   /** Resets the selection state */
   reset: () => void;
 };
@@ -50,7 +54,8 @@ export const defaultInitState: SelectionState = {
   selectedImages: new Set(),
   selectedAlbums: new Set(),
   lastSelectedItem: null,
-  containerRef: { current: null }
+  containerRef: { current: null },
+  selectingEnabled: true
 };
 
 export const initSelectionStore = (): SelectionState => ({ ...defaultInitState });
@@ -195,5 +200,6 @@ export const createSelectionStore = (
         throw new Error(`Image with id ${item.id} is not selected`);
     }
   }),
+  setSelectingEnabled: (value) => set(() => ({ selectingEnabled: value })),
   reset: () => set(() => ({ ...defaultInitState }))
 }));
