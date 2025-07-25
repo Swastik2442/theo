@@ -16,6 +16,7 @@ import StoreProviders from "~/contexts/storeProviders";
 import TopNav from "~/components/TopNav";
 import SecondaryNav from "~/components/SecondaryNav";
 import { Toaster } from "~/components/ui/sonner";
+import { SimpleUploadDropzone } from "~/components/uploadDropzone";
 
 export const metadata: Metadata = {
   title: "Theo",
@@ -40,12 +41,14 @@ export default function RootLayout({
           <div className="h-screen flex flex-col">
             <TopNav />
             <SignedIn>
+              <SimpleUploadDropzone>
               <PressedKeysProvider>
                 <SecondaryNav />
                 <div className="grid grid-rows-[auto,1fr] flex-1">
                   <main className="overflow-y-auto min-h-full">{children}</main>
                 </div>
               </PressedKeysProvider>
+              </SimpleUploadDropzone>
             </SignedIn>
             <SignedOut>
               <p className="p-4 text-2xl text-center cursor-default select-none">Sign in to see Images</p>
