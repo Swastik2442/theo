@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 import { useShallow } from "zustand/react/shallow";
@@ -10,23 +9,27 @@ import { toast } from "sonner";
 import { useRouteStore } from "~/contexts/stores/routeStoreProvider";
 import { useUploadThing } from "~/hooks/uploadThing";
 import { LoadingIcon, UploadIcon } from "~/components/ui/icons";
+import { isAnyDialogOpen } from "~/utils/dialog";
 
+/**
+ * A simple Modal Component
+ *
+ * NOTE: Will be added to DOM but will not be visible if another Dialog is open.
+ * Should be re-added to DOM after other open Dialogs are closed.
+ */
 function Modal({ children }: { children: React.ReactNode }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    if (!dialogRef.current?.open) {
+    if (!isAnyDialogOpen() && !dialogRef.current?.open) {
       dialogRef.current?.showModal();
     }
   }, []);
 
-  return createPortal(
-    <div className="modal-backdrop">
-      <dialog ref={dialogRef} className="w-screen h-screen bg-zinc-500/50 border-4 border-accent-foreground">
-        {children}
-      </dialog>
-    </div>,
-    document.body!
+  return (
+    <dialog ref={dialogRef} className="w-screen h-screen bg-zinc-500/50 border-4 border-accent-foreground">
+      {children}
+    </dialog>
   );
 }
 
@@ -143,7 +146,7 @@ export function SimpleUploadDropzone({ children }: { children: React.ReactNode; 
       {children}
       {!isUploading && draggedOver && (
         <Modal>
-          <div className="flex flex-col gap-2 justify-center items-center size-full text-accent-foreground">
+          <div className="flex flex-col gap-2 justify-center items-center size-full text-accent-foreground select-none">
             <UploadIcon className="size-6 fill-zinc-500/50" />
             <span>Upload Image(s)</span>
           </div>
