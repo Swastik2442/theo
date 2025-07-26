@@ -142,7 +142,7 @@ export function SimpleUploadDropzone({ children }: { children: React.ReactNode; 
   );
 
   return (
-    <div {...containerProps}>
+    <div className="flex flex-col flex-1" {...containerProps}>
       {children}
       {!isUploading && draggedOver && (
         <Modal>

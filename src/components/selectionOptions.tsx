@@ -3,7 +3,6 @@
 import { useActionState, useEffect, useState } from "react";
 import Form from "next/form";
 import { useRouter } from "next/navigation";
-import { usePostHog } from "posthog-js/react";
 import { useShallow } from "zustand/react/shallow";
 import { Download, Move, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +10,7 @@ import { toast } from "sonner";
 import { deleteMultipleAction, moveImagesAction } from "~/server/actions";
 import { useRouteStore } from "~/contexts/stores/routeStoreProvider";
 import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
+import { useDownloadSelection } from "~/hooks/downloadSelection";
 import { Button } from "~/components/ui/button";
 import {
   AlertDialog,
@@ -41,8 +41,6 @@ import {
   SelectValue,
 } from "~/components/ui/select"
 import { Label } from "~/components/ui/label";
-import { LoadingIcon } from "~/components/ui/icons";
-import { downloadAsBlob } from "~/utils/file";
 
 export function StopSelectionButton() {
   const reset = useSelectionStore((s) => s.reset);
@@ -54,7 +52,7 @@ export function StopSelectionButton() {
   );
 }
 
-export function getDeletionStrings(noOfImages: number, noOfAlbums: number) {
+function getDeletionStrings(noOfImages: number, noOfAlbums: number) {
   let title = "selection", text = "data", successText = "Selection deleted";
   if (noOfAlbums > 0 && noOfImages > 0) {
     title = text = `Album${noOfAlbums > 1 ? "s" : ""} and Image${noOfImages > 1 ? "s" : ""}`;
@@ -209,57 +207,6 @@ export function MoveSelectionButton() {
       </DialogContent>
     </Dialog>
   );
-}
-
-export function useDownloadSelection() {
-  const posthog = usePostHog();
-  const { selectedAlbums, selectedImages } = useSelectionStore(useShallow((s) => ({
-    selectedAlbums: s.selectedAlbums,
-    selectedImages: s.selectedImages
-  })));
-  const [downloading, setDownloading] = useState(false);
-
-  const downloadSelection = async () => {
-    if (downloading) return;
-    try {
-      posthog.capture("download_begin");
-      setDownloading(true);
-      toast(
-        (
-          <div className="flex gap-2 items-center">
-            <LoadingIcon className="size-6" />
-            <span className="text-lg">Downloading...</span>
-          </div>
-        ),
-        { id: "download-begin", duration: 60000 }
-      );
-
-      const downloadSuccess = await downloadAsBlob("/api/downloadthing", {
-        method: "POST",
-        body: JSON.stringify({
-          albums: Array.from(selectedAlbums),
-          images: Array.from(selectedImages)
-        })
-      }, "download.zip", [{ accept: { "application/zip": ['.zip'] } }]);
-
-      posthog.capture("download_complete");
-      toast.dismiss("download-begin");
-      if (downloadSuccess) toast((
-        <span className="text-lg">
-          Download complete!
-        </span>
-      ), { duration: 5000 });
-
-    } catch (error) {
-      posthog.capture("download_error", { error });
-      toast.dismiss("download-begin");
-      toast.error("Download failed. Please try again later.");
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  return { downloading, downloadSelection };
 }
 
 export function DownloadSelectionButton() {

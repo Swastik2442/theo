@@ -5,12 +5,12 @@ import { useShallow } from "zustand/react/shallow";
 
 import { useRouteStore } from "~/contexts/stores/routeStoreProvider";
 import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
+import { useDownloadSelection } from "~/hooks/downloadSelection";
 import {
   ContextMenuGroup,
   ContextMenuItem,
   ContextMenuShortcut
 } from "~/components/ui/context-menu";
-import { useDownloadSelection } from "~/components/selectionOptions";
 
 // TODO: Implement Move/Delete Options like SecondaryNav
 // TODO: Implement cut and paste functionality
