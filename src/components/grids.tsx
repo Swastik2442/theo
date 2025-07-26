@@ -2,7 +2,7 @@ import Image from "next/image";
 import { Check } from "lucide-react";
 
 import { albums, images } from "~/server/db/schema"
-import { AlbumCardContainer, GridSelectionContainer, GridSelectionShortcuts, ImageCardContainer } from "~/components/containers";
+import { AlbumCardContainer, GridDraggingContainer, GridSelectionContainer, GridSelectionShortcuts, ImageCardContainer } from "~/components/containers";
 import { gradientFromString } from "~/utils/color";
 import { fileName } from "~/utils/file";
 import { cn } from "~/utils/css";
@@ -22,7 +22,7 @@ function CustomGrid({ items }: { items: { key: React.Key; component: React.React
   )
 }
 
-const selectedContainerStyles = "outline-1 rounded-md outline-accent hover:outline-accent-foreground group-data-[selected=true]:outline-accent-foreground group-data-[selected=true]:outline-2 group-data-[selected=true]:hover:outline-3";
+const selectedContainerStyles = "outline-1 rounded-md outline-accent hover:outline-accent-foreground group-data-[dragging=true]:hover:outline-accent group-data-[selected=true]:outline-accent-foreground group-data-[selected=true]:outline-2 group-data-[selected=true]:hover:outline-3";
 function SelectedCheck() {
   return (
     <div className="bg-blue-500 text-white shadow-md rounded-md absolute bottom-1.5 right-1.5 group-data-[selected=true]:block hidden">
@@ -55,13 +55,13 @@ function ImageCard({ image }: { image: TImage }) {
     <ImageCardContainer image={image}>
       <div className="relative">
         <Image
-          src={image.url} alt={image.name} title={image.name}
+          src={image.url} alt={image.name}
           width={192} height={192}
           className={cn("aspect-square object-contain", selectedContainerStyles)}
         />
         <SelectedCheck />
       </div>
-      <p className="max-w-48 text-center pt-1 truncate" title={image.name}>{fileName(image.name)}</p>
+      <p className="max-w-48 text-center pt-1 truncate group-data-[dragging=true]:hidden" title={image.name}>{fileName(image.name)}</p>
     </ImageCardContainer>
   );
 }
@@ -81,6 +81,7 @@ export async function AlbumsAndImagesGrid({ albums, images }: { albums: TAlbum[]
           })),
         ]} />
       </GridSelectionContainer>
+      <GridDraggingContainer />
       <GridSelectionShortcuts albums={albums} images={images} />
     </>
   );

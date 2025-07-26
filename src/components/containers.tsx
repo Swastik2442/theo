@@ -8,6 +8,7 @@ import {
   useRef,
   useState
 } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useShallow } from "zustand/react/shallow";
 
@@ -22,6 +23,7 @@ import {
   getElementId
 } from "~/utils/selection";
 import { isMacOS } from "~/utils/platform";
+import { cn } from "~/utils/css";
 
 type TAlbum = Parameters<typeof AlbumContextMenu>['0']['album'];
 type TImage = Parameters<typeof ImageContextMenu>['0']['image'];
@@ -49,7 +51,7 @@ export function AlbumCardContainer({ album, children }: { album: TAlbum; childre
   if (!selectionMode) {
     return (
       <AlbumContextMenu album={album}>
-        <Link {...selectionProps} href={`/albums/${album.id}`}>
+        <Link href={`/albums/${album.id}`} onDragStart={(e) => e.preventDefault()} {...selectionProps}>
           {children}
         </Link>
       </AlbumContextMenu>
@@ -58,13 +60,13 @@ export function AlbumCardContainer({ album, children }: { album: TAlbum; childre
 
   return (
     <AlbumContextMenu album={album}>
-      <div className="group" {...selectionProps} onClick={() => {
+      <div onClick={() => {
         if (isSelected) {
           removeFromSelection({ id: album.id, type: "album" }, pressedKeysRef.current);
         } else {
           addToSelection({ id: album.id, type: "album" }, pressedKeysRef.current);
         }
-      }}>
+      }} onDragStart={(e) => e.preventDefault()} className="group" {...selectionProps}>
         {children}
       </div>
     </AlbumContextMenu>
@@ -76,11 +78,15 @@ export function ImageCardContainer({ image, children }: { image: TImage; childre
   const {
     selectionMode,
     isSelected,
+    draggingMode,
+    draggingContainerRef,
     addToSelection,
     removeFromSelection
   } = useSelectionStore(useShallow((s) => ({
     selectionMode: s.selectedAlbums.size > 0 || s.selectedImages.size > 0,
     isSelected: s.selectedImages.has(image.id),
+    draggingMode: s.draggingMode,
+    draggingContainerRef: s.draggingContainerRef,
     addToSelection: s.addItem,
     removeFromSelection: s.removeItem
   })));
@@ -93,22 +99,38 @@ export function ImageCardContainer({ image, children }: { image: TImage; childre
   if (!selectionMode) {
     return (
       <ImageContextMenu image={image}>
-        <Link {...selectionProps} href={`/images/${image.id}`}>
+        <Link href={`/images/${image.id}`} onDragStart={(e) => e.preventDefault()} {...selectionProps}>
           {children}
         </Link>
       </ImageContextMenu>
     );
   }
 
+  if (isSelected && draggingMode && draggingContainerRef.current !== null) {
+    return (
+      <>
+        <div className="group invisible">
+          {children}
+        </div>
+        {createPortal(
+          <div data-dragging={true} className="group">
+            {children}
+          </div>,
+          draggingContainerRef.current
+        )}
+      </>
+    );
+  }
+
   return (
     <ImageContextMenu image={image}>
-      <div className="group" {...selectionProps} onClick={() => {
+      <div onClick={() => {
         if (isSelected) {
           removeFromSelection({ id: image.id, type: "image" }, pressedKeysRef.current);
         } else {
           addToSelection({ id: image.id, type: "image" }, pressedKeysRef.current);
         }
-      }}>
+      }} onDragStart={(e) => e.preventDefault()} className="group" {...selectionProps}>
         {children}
       </div>
     </ImageContextMenu>
@@ -136,6 +158,32 @@ export function GridSelectionShortcuts({ albums, images }: { albums: Pick<TAlbum
   return null;
 }
 
+export function GridDraggingContainer() {
+  const { draggingMode, draggingContainerRef } = useSelectionStore(useShallow((s) => ({
+    draggingMode: s.draggingMode,
+    draggingContainerRef: s.draggingContainerRef
+  })));
+  const [mousePos, setMousePos] = useState({ left: 0, top: 0 });
+
+  if (!draggingMode) return <></>;
+  return (
+    <div
+      ref={draggingContainerRef}
+      style={mousePos}
+      className={cn(
+        "absolute *:absolute",
+        "*:first:inset-0 *:first:z-[10]",
+        "*:nth-[2]:-top-1.5 *:nth-[2]:left-1.5 *:nth-[2]:z-[9]",
+        "*:nth-[3]:-top-3 *:nth-[3]:left-3 *:nth-[3]:z-[8]",
+        "*:nth-[4]:-top-4.5 *:nth-[4]:left-4.5 *:nth-[4]:z-[7]",
+        "*:nth-[5]:-top-6 *:nth-[5]:left-6 *:nth-[5]:z-[6]",
+        "[&>*:nth-child(5)~*]:hidden"
+      )}
+    >
+    </div>
+  );
+}
+
 const scrollSpeed = 5;
 type SelectionBox = {
   left: number;
@@ -148,7 +196,7 @@ type SelectionBox = {
 export function GridSelectionContainer({ children }: { children: React.ReactNode }) {
   const {
     selectingEnabled,
-    containerRef,
+    selectionContainerRef,
     selectedAlbums,
     selectedImages,
     modifyAlbums,
@@ -157,7 +205,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     reset
   } = useSelectionStore(useShallow((s) => ({
     selectingEnabled: s.selectingEnabled,
-    containerRef: s.containerRef,
+    selectionContainerRef: s.selectionContainerRef,
     selectedAlbums: s.selectedAlbums,
     selectedImages: s.selectedImages,
     lastSelectedItem: s.lastSelectedItem,
@@ -200,7 +248,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     // Only handle if selecting functionality is enabled or on left mouse button clicks
     if (!selectingEnabled || e.button != 0) return;
 
-    const rootElement = containerRef.current;
+    const rootElement = selectionContainerRef.current;
     if (!rootElement) return;
     const rootRect = rootElement.getBoundingClientRect();
 
@@ -265,7 +313,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [containerRef, setSelectionBox, setSelectionBoxActive]);
+  }, [selectionContainerRef, setSelectionBox, setSelectionBoxActive]);
 
   const handleBlur = useCallback(() => {
     setSelectionBoxActive(false);
@@ -293,7 +341,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
 
   // Check which items intersect with selection
   useEffect(() => {
-    const containerDiv = containerRef.current;
+    const containerDiv = selectionContainerRef.current;
     if (!selectingEnabled || !selectionBoxActive || !containerDiv) return;
 
     const albumItems = Array.from(containerDiv.querySelectorAll(`*[${selectionTypeAttr}='album']`));
@@ -341,7 +389,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
 
   return (
     <>
-      <div ref={containerRef} onMouseDown={handleMouseDown} className="min-h-full">
+      <div ref={selectionContainerRef} onMouseDown={handleMouseDown} className="min-h-full">
         {children}
       </div>
       {selectionBoxActive && (

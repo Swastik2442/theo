@@ -24,9 +24,13 @@ export type SelectionState = {
   /** Last selected item, used for shift key based selection */
   lastSelectedItem: Nullable<SelectedItem>;
   /** Reference to the container element where selection is applied */
-  containerRef: React.RefObject<Nullable<HTMLDivElement>>;
+  selectionContainerRef: React.RefObject<Nullable<HTMLDivElement>>;
   /** Whether Selecting Functionality is Enabled */
   selectingEnabled: boolean;
+  /** Whether Items are being Dragged */
+  draggingMode: boolean;
+  /** Reference to the element attached to the mouse when dragging */
+  draggingContainerRef: React.RefObject<Nullable<HTMLDivElement>>;
 };
 export type SelectionActions = {
   /** Adds an item to the selection, based on pressed keys */
@@ -45,6 +49,8 @@ export type SelectionActions = {
   setLastSelectedItem: (item: SelectedItem) => void;
   /** Enables/Disables Selecting Functionality */
   setSelectingEnabled: (value: boolean) => void;
+  /** Enables/Disables Dragging of Items */
+  setDraggingMode: (value: boolean) => void;
   /** Resets the selection state */
   reset: () => void;
 };
@@ -54,8 +60,10 @@ export const defaultInitState: SelectionState = {
   selectedImages: new Set(),
   selectedAlbums: new Set(),
   lastSelectedItem: null,
-  containerRef: { current: null },
-  selectingEnabled: true
+  selectionContainerRef: { current: null },
+  selectingEnabled: true,
+  draggingMode: false,
+  draggingContainerRef: { current: null }
 };
 
 export const initSelectionStore = (): SelectionState => ({ ...defaultInitState });
@@ -67,7 +75,7 @@ export const createSelectionStore = (
   addItem: (item, pressedKeys) => set((s) => {
     // if shift pressed,
     if (pressedKeys.shiftKey) {
-      const containerDiv = s.containerRef.current;
+      const containerDiv = s.selectionContainerRef.current;
       if (!containerDiv) throw new Error("Container ref is not set");
       const elements = Array.from(containerDiv.querySelectorAll(`*[${selectionIdAttr}][${selectionTypeAttr}]`)).map(
         el => ({ id: getElementId(el), type: getElementType(el) })
@@ -125,7 +133,7 @@ export const createSelectionStore = (
       const lastSelectedItem = s.lastSelectedItem;
       if (!lastSelectedItem) throw new Error("Last selected item is not set");
 
-      const containerDiv = s.containerRef.current;
+      const containerDiv = s.selectionContainerRef.current;
       if (!containerDiv) throw new Error("Container ref is not set");
       const elements = Array.from(containerDiv.querySelectorAll(`*[${selectionIdAttr}][${selectionTypeAttr}]`)).map(
         el => ({ id: getElementId(el), type: getElementType(el) })
@@ -201,5 +209,6 @@ export const createSelectionStore = (
     }
   }),
   setSelectingEnabled: (value) => set(() => ({ selectingEnabled: value })),
+  setDraggingMode: (value) => set(() => ({ draggingMode: value })),
   reset: () => set(() => ({ ...defaultInitState }))
 }));
