@@ -5,6 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 
 import { useRouteStore } from "~/contexts/stores/routeStoreProvider";
 import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
+import { useDialogStore } from "~/contexts/stores/dialogStoreProvider";
 import { useDownloadSelection } from "~/hooks/downloadSelection";
 import {
   ContextMenuGroup,
@@ -12,7 +13,6 @@ import {
   ContextMenuShortcut
 } from "~/components/ui/context-menu";
 
-// TODO: Implement Move/Delete Options like SecondaryNav
 // TODO: Implement cut and paste functionality
 function CommonSelectionContextMenuItems() {
   const pathName = usePathname();
@@ -36,6 +36,12 @@ function CommonSelectionContextMenuItems() {
     modifyImages: s.modifyImages,
     modifyAlbums: s.modifyAlbums,
     reset: s.reset
+  })));
+
+  const { setDialog, dialogOpen, setDialogOpen } = useDialogStore(useShallow((s) => ({
+    setDialog: s.setDialog,
+    dialogOpen: s.dialogOpen,
+    setDialogOpen: s.setDialogOpen
   })));
 
   const { downloading, downloadSelection } = useDownloadSelection();
@@ -62,7 +68,11 @@ function CommonSelectionContextMenuItems() {
       }} disabled={notSelectionMode} inset>
         Invert Selected Items
       </ContextMenuItem>
-      <ContextMenuItem disabled inset>
+      <ContextMenuItem
+        onSelect={() => { setDialog("MOVE_SELECTION"); setDialogOpen(true); }}
+        disabled={notSelectionMode || dialogOpen}
+        inset
+      >
         Move Selected Items
       </ContextMenuItem>
       <ContextMenuItem disabled inset>
@@ -73,10 +83,19 @@ function CommonSelectionContextMenuItems() {
         Paste
         <ContextMenuShortcut>⌘V</ContextMenuShortcut>
       </ContextMenuItem>
-      <ContextMenuItem onSelect={downloadSelection} disabled={notSelectionMode || downloading} inset>
+      <ContextMenuItem
+        onSelect={downloadSelection}
+        disabled={notSelectionMode || downloading}
+        inset
+      >
         Download
       </ContextMenuItem>
-      <ContextMenuItem disabled variant="destructive" inset>
+      <ContextMenuItem
+        onSelect={() => { setDialog("DELETE_SELECTION"); setDialogOpen(true); }}
+        disabled={notSelectionMode || dialogOpen}
+        variant="destructive"
+        inset
+      >
         Delete
       </ContextMenuItem>
     </>

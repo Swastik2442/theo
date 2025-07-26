@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { type Dispatch, type SetStateAction, useActionState, useEffect, useState } from "react";
 import Form from "next/form";
 import { useRouter } from "next/navigation";
 import { useShallow } from "zustand/react/shallow";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { deleteMultipleAction, moveImagesAction } from "~/server/actions";
 import { useRouteStore } from "~/contexts/stores/routeStoreProvider";
 import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
+import { useDialogStore } from "~/contexts/stores/dialogStoreProvider";
 import { useDownloadSelection } from "~/hooks/downloadSelection";
 import { Button } from "~/components/ui/button";
 import {
@@ -80,6 +81,34 @@ function getDeletionStrings(noOfImages: number, noOfAlbums: number) {
 }
 
 export function DeleteSelectionButton() {
+  const { selectionMode, selectedAlbums, selectedImages } = useSelectionStore(useShallow((s) => ({
+    selectionMode: s.selectedAlbums.size > 0 || s.selectedImages.size > 0,
+    selectedAlbums: s.selectedAlbums,
+    selectedImages: s.selectedImages
+  })));
+  const { setDialog, setDialogOpen } = useDialogStore(useShallow((s) => ({
+    setDialog: s.setDialog,
+    dialogOpen: s.dialogOpen,
+    setDialogOpen: s.setDialogOpen
+  })));
+  if (!selectionMode) return <></>;
+
+  const { title: titleSpan } = getDeletionStrings(selectedImages.size, selectedAlbums.size);
+
+  return (
+    <Button onClick={() => { setDialog("DELETE_SELECTION"); setDialogOpen(true); }} type="button" title={`Delete ${titleSpan}`} variant="link" size="icon" className="cursor-pointer size-4">
+      <Trash2 />
+      <span className="sr-only select-none">Delete {titleSpan}</span>
+    </Button>
+  );
+}
+
+export function DeleteSelectionDialog({
+  dialogOpen, setDialogOpenAction
+}: {
+  dialogOpen: boolean;
+  setDialogOpenAction: Dispatch<SetStateAction<boolean>>;
+}) {
   const router = useRouter();
   const { selectionMode, selectedAlbums, selectedImages, reset } = useSelectionStore(useShallow((s) => ({
     selectionMode: s.selectedAlbums.size > 0 || s.selectedImages.size > 0,
@@ -89,20 +118,10 @@ export function DeleteSelectionButton() {
   })));
   if (!selectionMode) return <></>;
 
-  const {
-    title: titleSpan,
-    text: textSpan,
-    successText
-  } = getDeletionStrings(selectedImages.size, selectedAlbums.size);
+  const { text: textSpan, successText } = getDeletionStrings(selectedImages.size, selectedAlbums.size);
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button type="button" title={`Delete ${titleSpan}`} variant="link" size="icon" className="cursor-pointer size-4">
-          <Trash2 />
-          <span className="sr-only select-none">Delete {titleSpan}</span>
-        </Button>
-      </AlertDialogTrigger>
+    <AlertDialog open={dialogOpen} onOpenChange={setDialogOpenAction}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
@@ -129,22 +148,46 @@ export function DeleteSelectionButton() {
 const initialState = { status: "init" } as const;
 
 export function MoveSelectionButton() {
+  const selectionMode = useSelectionStore(useShallow((s) => s.selectedAlbums.size > 0 || s.selectedImages.size > 0));
+  const { setDialog, setDialogOpen } = useDialogStore(useShallow((s) => ({
+    setDialog: s.setDialog,
+    dialogOpen: s.dialogOpen,
+    setDialogOpen: s.setDialogOpen
+  })));
+  if (!selectionMode) return null;
+
+  return (
+    <Button onClick={() => { setDialog("MOVE_SELECTION"); setDialogOpen(true); }} type="button" title="Move Images" variant="link" size="icon" className="cursor-pointer size-4">
+      <Move />
+      <span className="sr-only select-none">Move Images</span>
+    </Button>
+  );
+}
+
+export function MoveSelectionDialog({
+  dialogOpen, setDialogOpenAction
+}: {
+  dialogOpen: boolean;
+  setDialogOpenAction: Dispatch<SetStateAction<boolean>>;
+}) {
   const router = useRouter();
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [state, formAction, pending] = useActionState(moveImagesAction, initialState);
 
+  // Get available Albums
   const { albums, currentAlbumId } = useRouteStore(useShallow((state) => ({
     albums: state.myAlbums,
     currentAlbumId: state.albumInfo?.id ?? null
     // BUG: Can lead to wrong album ID if selected images are not in the current album
   })));
   const [selectedAlbumId, setSelectedAlbumId] = useState(currentAlbumId);
-  const selectedImagesIDs = useSelectionStore(useShallow(
-    (s) => Array.from(s.selectedImages.values())
-  ));
-  // NOTE: Combining the subscriptions causes useShallow to not work correctly
-  const reset = useSelectionStore((s) => s.reset);
 
+  // Get selected Images
+  const { selectedImagesIDs, reset } = useSelectionStore(useShallow((s) => ({
+    selectedImagesIDs: s.selectedImages,
+    reset: s.reset
+  })));
+
+  // Manage Form Submission
   useEffect(() => {
     if (state.status == 'error') {
       toast[state.status](state.message, {
@@ -153,20 +196,15 @@ export function MoveSelectionButton() {
       });
     } else if (state.status == 'success') {
       router.refresh();
-      setDialogOpen(false);
+      setDialogOpenAction(false);
       reset();
-      toast.success(`${selectedImagesIDs.length} Images moved${selectedAlbumId === null ? '' : ` to ${selectedAlbumId}`}`);
+      toast.success(`${selectedImagesIDs.size} Images moved${selectedAlbumId === null ? '' : ` to ${selectedAlbumId}`}`);
     }
   }, [state]);
 
+  if (selectedImagesIDs.size === 0) return <></>;
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogTrigger asChild>
-        <Button type="button" title="Move Images" variant="link" size="icon" className="cursor-pointer size-4">
-          <Move />
-          <span className="sr-only select-none">Move Images</span>
-        </Button>
-      </DialogTrigger>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpenAction}>
       <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Move Images</DialogTitle>
@@ -175,7 +213,7 @@ export function MoveSelectionButton() {
         <Form action={formAction}>
           <div className="grid gap-4 pb-4">
             <div className="grid gap-3">
-              <input type="hidden" name="imageIds" value={JSON.stringify(selectedImagesIDs)} />
+              <input type="hidden" name="imageIds" value={JSON.stringify(Array.from(selectedImagesIDs))} />
               <Select
                 name="albumId"
                 defaultValue={JSON.stringify(currentAlbumId)}
@@ -183,7 +221,7 @@ export function MoveSelectionButton() {
                 onValueChange={(value) => setSelectedAlbumId(JSON.parse(value))}
               >
                 <Label htmlFor="albumId">Album</Label>
-                <SelectTrigger title="Select an album" className="w-full">
+                <SelectTrigger id="albumId" title="Select an album" className="w-full">
                   <SelectValue placeholder="Select an album" />
                 </SelectTrigger>
                 <SelectContent>
