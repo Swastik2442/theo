@@ -28,9 +28,9 @@ export function ImageContextMenu({ image, children }: { image: TImage; children:
   const fullUrl = useClientHost();
   const imageLink = `${fullUrl}/images/${image.id}`;
   return (
-    <ContextMenu onOpenChange={(isOpen) => (isOpen ? setSelectingEnabled(false) : setTimeout(() => setSelectingEnabled(true), 500))}>
+    <ContextMenu onOpenChange={(isOpen) => (isOpen ? setSelectingEnabled(false) : setTimeout(() => setSelectingEnabled(true), 250))}>
       <ContextMenuTrigger>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="print:hidden w-72">
+      <ContextMenuContent onContextMenu={(e) => e.preventDefault()} className="print:hidden w-72">
         <ImageSelectionContextMenuItems imageId={image.id} />
         <ContextMenuSeparator />
         <ContextMenuGroup>
@@ -89,7 +89,7 @@ export function AlbumContextMenu({ album, children }: { album: TAlbum; children:
   return (
     <ContextMenu onOpenChange={(isOpen) => (isOpen ? setSelectingEnabled(false) : setTimeout(() => setSelectingEnabled(true), 500))}>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="print:hidden w-72">
+      <ContextMenuContent onContextMenu={(e) => e.preventDefault()} className="print:hidden w-72">
         <AlbumSelectionContextMenuItems albumId={album.id} />
         <ContextMenuSeparator />
         <ContextMenuGroup>

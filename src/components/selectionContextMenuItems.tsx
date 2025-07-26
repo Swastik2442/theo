@@ -5,8 +5,14 @@ import { useShallow } from "zustand/react/shallow";
 
 import { useRouteStore } from "~/contexts/stores/routeStoreProvider";
 import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
-import { ContextMenuGroup, ContextMenuItem, ContextMenuShortcut } from "~/components/ui/context-menu";
+import {
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuShortcut
+} from "~/components/ui/context-menu";
+import { useDownloadSelection } from "~/components/selectionOptions";
 
+// TODO: Implement Move/Delete Options like SecondaryNav
 // TODO: Implement cut and paste functionality
 function CommonSelectionContextMenuItems() {
   const pathName = usePathname();
@@ -16,7 +22,14 @@ function CommonSelectionContextMenuItems() {
     myAlbums: s.myAlbums,
     myAlbumImages: s.myAlbumImages
   })));
-  const { notSelectionMode, selectedImages, selectedAlbums, modifyImages, modifyAlbums, reset } = useSelectionStore(useShallow((s) => ({
+  const {
+    notSelectionMode,
+    selectedImages,
+    selectedAlbums,
+    modifyImages,
+    modifyAlbums,
+    reset
+  } = useSelectionStore(useShallow((s) => ({
     notSelectionMode: s.selectedImages.size == 0 && s.selectedAlbums.size == 0,
     selectedImages: s.selectedImages,
     selectedAlbums: s.selectedAlbums,
@@ -24,6 +37,8 @@ function CommonSelectionContextMenuItems() {
     modifyAlbums: s.modifyAlbums,
     reset: s.reset
   })));
+
+  const { downloading, downloadSelection } = useDownloadSelection();
 
   return (
     <>
@@ -45,15 +60,24 @@ function CommonSelectionContextMenuItems() {
           modifyAlbums(Array.from(new Set(myAlbums.map((album) => album.id)).difference(selectedAlbums)));
         }
       }} disabled={notSelectionMode} inset>
-        Invert Selection
+        Invert Selected Items
       </ContextMenuItem>
       <ContextMenuItem disabled inset>
-        Cut Selection
+        Move Selected Items
+      </ContextMenuItem>
+      <ContextMenuItem disabled inset>
+        Cut
         <ContextMenuShortcut>⌘X</ContextMenuShortcut>
       </ContextMenuItem>
       <ContextMenuItem disabled inset>
-        Paste Selection
+        Paste
         <ContextMenuShortcut>⌘V</ContextMenuShortcut>
+      </ContextMenuItem>
+      <ContextMenuItem onSelect={downloadSelection} disabled={notSelectionMode || downloading} inset>
+        Download
+      </ContextMenuItem>
+      <ContextMenuItem disabled variant="destructive" inset>
+        Delete
       </ContextMenuItem>
     </>
   );

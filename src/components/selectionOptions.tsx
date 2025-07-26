@@ -54,6 +54,33 @@ export function StopSelectionButton() {
   );
 }
 
+export function getDeletionStrings(noOfImages: number, noOfAlbums: number) {
+  let title = "selection", text = "data", successText = "Selection deleted";
+  if (noOfAlbums > 0 && noOfImages > 0) {
+    title = text = `Album${noOfAlbums > 1 ? "s" : ""} and Image${noOfImages > 1 ? "s" : ""}`;
+    successText = `${noOfAlbums == 1 ? "An Album" : `${noOfAlbums} Albums`} and ${noOfImages == 1 ? "an Image" : `${noOfImages} Images`} deleted`;
+  } else if (noOfAlbums > 0) {
+    if (noOfAlbums === 1) {
+      title = "Album";
+      text = "Album and remove all the Images in it";
+      successText = "Album deleted";
+    } else {
+      title = "Albums";
+      text = "Albums and remove all the Images in them";
+      successText = `${noOfAlbums} Albums deleted`;
+    }
+  } else if (noOfImages > 0) {
+    if (noOfImages === 1) {
+      title = text = "Image";
+      successText = "Image deleted";
+    } else {
+      title = text = "Images";
+      successText = `${noOfImages} Images deleted`;
+    }
+  }
+  return { title, text, successText };
+}
+
 export function DeleteSelectionButton() {
   const router = useRouter();
   const { selectionMode, selectedAlbums, selectedImages, reset } = useSelectionStore(useShallow((s) => ({
@@ -64,50 +91,32 @@ export function DeleteSelectionButton() {
   })));
   if (!selectionMode) return <></>;
 
-  let deletionTitleSpan = "selection", deletionTextSpan = "data", deletionSuccessText = "Selection deleted";
-  if (selectedAlbums.size > 0 && selectedImages.size > 0) {
-    deletionTitleSpan = deletionTextSpan = `Album${selectedAlbums.size > 1 ? "s" : ""} and Image${selectedImages.size > 1 ? "s" : ""}`;
-    deletionSuccessText = `${selectedAlbums.size == 1 ? "An Album" : `${selectedAlbums.size} Albums`} and ${selectedImages.size == 1 ? "an Image" : `${selectedImages.size} Images`} deleted`;
-  } else if (selectedAlbums.size > 0) {
-    if (selectedAlbums.size === 1) {
-      deletionTitleSpan = "Album";
-      deletionTextSpan = "Album and remove all the Images in it";
-      deletionSuccessText = "Album deleted";
-    } else {
-      deletionTitleSpan = "Albums";
-      deletionTextSpan = "Albums and remove all the Images in them";
-      deletionSuccessText = `${selectedAlbums.size} Albums deleted`;
-    }
-  } else if (selectedImages.size > 0) {
-    if (selectedImages.size === 1) {
-      deletionTitleSpan = deletionTextSpan = "Image";
-      deletionSuccessText = "Image deleted";
-    } else {
-      deletionTitleSpan = deletionTextSpan = "Images";
-      deletionSuccessText = `${selectedImages.size} Images deleted`;
-    }
-  }
+  const {
+    title: titleSpan,
+    text: textSpan,
+    successText
+  } = getDeletionStrings(selectedImages.size, selectedAlbums.size);
 
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button type="button" title={`Delete ${deletionTitleSpan}`} variant="link" size="icon" className="cursor-pointer size-4">
+        <Button type="button" title={`Delete ${titleSpan}`} variant="link" size="icon" className="cursor-pointer size-4">
           <Trash2 />
-          <span className="sr-only select-none">Delete {deletionTitleSpan}</span>
+          <span className="sr-only select-none">Delete {titleSpan}</span>
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete your {deletionTextSpan}.
+            This action cannot be undone. This will permanently delete your {textSpan}.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={async () => {
             await deleteMultipleAction(Array.from(selectedImages), Array.from(selectedAlbums));
-            toast.info(deletionSuccessText);
+            toast.info(successText);
             reset();
             router.refresh();
           }}>
@@ -202,7 +211,7 @@ export function MoveSelectionButton() {
   );
 }
 
-export function DownloadSelectionButton() {
+export function useDownloadSelection() {
   const posthog = usePostHog();
   const { selectedAlbums, selectedImages } = useSelectionStore(useShallow((s) => ({
     selectedAlbums: s.selectedAlbums,
@@ -210,49 +219,54 @@ export function DownloadSelectionButton() {
   })));
   const [downloading, setDownloading] = useState(false);
 
+  const downloadSelection = async () => {
+    if (downloading) return;
+    try {
+      posthog.capture("download_begin");
+      setDownloading(true);
+      toast(
+        (
+          <div className="flex gap-2 items-center">
+            <LoadingIcon className="size-6" />
+            <span className="text-lg">Downloading...</span>
+          </div>
+        ),
+        { id: "download-begin", duration: 60000 }
+      );
+
+      const downloadSuccess = await downloadAsBlob("/api/downloadthing", {
+        method: "POST",
+        body: JSON.stringify({
+          albums: Array.from(selectedAlbums),
+          images: Array.from(selectedImages)
+        })
+      }, "download.zip", [{ accept: { "application/zip": ['.zip'] } }]);
+
+      posthog.capture("download_complete");
+      toast.dismiss("download-begin");
+      if (downloadSuccess) toast((
+        <span className="text-lg">
+          Download complete!
+        </span>
+      ), { duration: 5000 });
+
+    } catch (error) {
+      posthog.capture("download_error", { error });
+      toast.dismiss("download-begin");
+      toast.error("Download failed. Please try again later.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return { downloading, downloadSelection };
+}
+
+export function DownloadSelectionButton() {
+  const { downloading, downloadSelection } = useDownloadSelection();
   return (
     <Button
-      onClick={async () => {
-        if (downloading) return;
-        try {
-          posthog.capture("download_begin");
-          setDownloading(true);
-          toast(
-            (
-              <div className="flex gap-2 items-center">
-                <LoadingIcon className="size-6" />
-                <span className="text-lg">Downloading...</span>
-              </div>
-            ),
-            { id: "download-begin", duration: 60000 }
-          );
-
-          await downloadAsBlob("/api/downloadthing", {
-            method: "POST",
-            body: JSON.stringify({
-              albums: Array.from(selectedAlbums),
-              images: Array.from(selectedImages)
-            })
-          }, "download.zip", [{ accept: { "application/zip": ['.zip'] } }]);
-
-          posthog.capture("download_complete");
-          toast.dismiss("download-begin");
-          toast(
-            (
-              <span className="text-lg">
-                Download complete!
-              </span>
-            ),
-            { duration: 5000 }
-          );
-        } catch (error) {
-          posthog.capture("download_error", { error });
-          toast.dismiss("download-begin");
-          toast.error("Download failed. Please try again later.");
-        } finally {
-          setDownloading(false);
-        }
-      }}
+      onClick={downloadSelection}
       disabled={downloading}
       className="cursor-pointer size-4"
       title="Download Selection"
