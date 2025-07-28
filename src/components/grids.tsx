@@ -1,8 +1,14 @@
-import Image from "next/image";
 import { Check } from "lucide-react";
 
 import { albums, images } from "~/server/db/schema"
-import { AlbumCardContainer, GridDraggingContainer, GridSelectionContainer, GridSelectionShortcuts, ImageCardContainer } from "~/components/containers";
+import {
+  AlbumCardContainer,
+  GridDraggingContainer,
+  GridSelectionContainer,
+  GridSelectionShortcuts,
+  ImageCardContainer
+} from "~/components/containers";
+import ImageWithoutDrag from "~/components/ImageWithoutDrag";
 import { gradientFromString } from "~/utils/color";
 import { fileName } from "~/utils/file";
 import { cn } from "~/utils/css";
@@ -54,14 +60,16 @@ function ImageCard({ image }: { image: TImage }) {
   return (
     <ImageCardContainer image={image}>
       <div className="relative">
-        <Image
+        <ImageWithoutDrag
           src={image.url} alt={image.name}
           width={192} height={192}
           className={cn("aspect-square object-contain", selectedContainerStyles)}
         />
         <SelectedCheck />
       </div>
-      <p className="max-w-48 text-center pt-1 truncate group-data-[dragging=true]:hidden" title={image.name}>{fileName(image.name)}</p>
+      <p className="max-w-48 text-center pt-1 truncate group-data-[dragging=true]:hidden" title={image.name}>
+        {fileName(image.name)}
+      </p>
     </ImageCardContainer>
   );
 }

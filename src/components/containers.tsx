@@ -160,25 +160,82 @@ export function GridSelectionShortcuts({ albums, images }: { albums: Pick<TAlbum
 }
 
 export function GridDraggingContainer() {
-  const { draggingMode, draggingContainerRef } = useSelectionStore(useShallow((s) => ({
+  const {
+    draggingEnabled,
+    draggingMode,
+    setDraggingMode,
+    draggingContainerRef,
+    selectionContainerRef
+  } = useSelectionStore(useShallow((s) => ({
+    draggingEnabled: s.selectedAlbums.size === 0,
     draggingMode: s.draggingMode,
-    draggingContainerRef: s.draggingContainerRef
+    setDraggingMode: s.setDraggingMode,
+    draggingContainerRef: s.draggingContainerRef,
+    selectionContainerRef: s.selectionContainerRef
   })));
   const [mousePos, setMousePos] = useState({ left: 0, top: 0 });
 
-  if (!draggingMode) return <></>;
+  const handleMouseDown = useCallback((e: MouseEvent) => {
+    // Only handle if dragging is enabled or dragging mode is off or on left mouse button clicks
+    if (!draggingEnabled || draggingMode || e.button != 0) return;
+
+    const rootElement = selectionContainerRef.current;
+    if (!rootElement) return;
+    const rootRect = rootElement.getBoundingClientRect();
+
+    // Ensure click is within root element
+    if (e.clientX < rootRect.left
+    || e.clientX > rootRect.right - 2
+    || e.clientY < rootRect.top
+    || e.clientY > rootRect.bottom - 2) return;
+
+    const startX = e.clientX + window.scrollX;
+    const startY = e.clientY + window.scrollY;
+
+    // Ensure click is on an image
+    const clickedItem = document.elementFromPoint(startX, startY);
+    if (!(clickedItem && (clickedItem.hasAttribute(selectionTypeAttr) || clickedItem.closest(`[${selectionTypeAttr}="image"]`)))) {
+      return;
+    }
+    const shiftX = startX - clickedItem.getBoundingClientRect().left;
+    const shiftY = startY - clickedItem.getBoundingClientRect().top;
+
+    setDraggingMode(true);
+    setMousePos({ left: startX - shiftX, top: startY - shiftY });
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const currentX = e.clientX + window.scrollX - shiftX;
+      const currentY = e.clientY + window.scrollY - shiftY;
+      setMousePos({ left: currentX, top: currentY });
+    };
+    const handleMouseUp = (e: MouseEvent) => {
+      setDraggingMode(false);
+      // TODO: If mouse is over an album, move items to album
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  }, [setMousePos])
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [handleMouseDown]);
+
   return (
     <div
       ref={draggingContainerRef}
       style={mousePos}
       className={cn(
-        "absolute *:absolute",
+        "cursor-move absolute *:absolute",
         "*:first:inset-0 *:first:z-[10]",
         "*:nth-[2]:-top-1.5 *:nth-[2]:left-1.5 *:nth-[2]:z-[9]",
         "*:nth-[3]:-top-3 *:nth-[3]:left-3 *:nth-[3]:z-[8]",
         "*:nth-[4]:-top-4.5 *:nth-[4]:left-4.5 *:nth-[4]:z-[7]",
         "*:nth-[5]:-top-6 *:nth-[5]:left-6 *:nth-[5]:z-[6]",
-        "[&>*:nth-child(5)~*]:hidden"
+        "[&>*:nth-child(5)~*]:hidden",
+        !draggingMode && "hidden"
       )}
     >
     </div>
@@ -196,6 +253,7 @@ type SelectionBox = {
 export function GridSelectionContainer({ children }: { children: React.ReactNode }) {
   const {
     selectingEnabled,
+    draggingMode,
     selectionContainerRef,
     selectedAlbums,
     selectedImages,
@@ -205,6 +263,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     reset
   } = useSelectionStore(useShallow((s) => ({
     selectingEnabled: s.selectingEnabled,
+    draggingMode: s.draggingMode,
     selectionContainerRef: s.selectionContainerRef,
     selectedAlbums: s.selectedAlbums,
     selectedImages: s.selectedImages,
@@ -222,8 +281,8 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
 
   // BUG: The selection box will not get updated if the mouse remains stationary after auto-scroll
   const handleMouseDown: MouseEventHandler<HTMLDivElement> = useCallback((e) => {
-    // Only handle if selecting functionality is enabled or on left mouse button clicks
-    if (!selectingEnabled || e.button != 0) return;
+    // Only handle if selecting functionality is enabled or dragging mode is disabled or on left mouse button clicks
+    if (!selectingEnabled || draggingMode || e.button != 0) return;
 
     const rootElement = selectionContainerRef.current;
     if (!rootElement) return;
@@ -305,7 +364,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
   // Check which items intersect with selection
   useEffect(() => {
     const containerDiv = selectionContainerRef.current;
-    if (!selectingEnabled || !selectionBoxActive || !containerDiv) return;
+    if (!selectingEnabled || draggingMode || !selectionBoxActive || !containerDiv) return;
 
     const albumItems = Array.from(containerDiv.querySelectorAll(`*[${selectionTypeAttr}='album']`));
     const imageItems = Array.from(containerDiv.querySelectorAll(`*[${selectionTypeAttr}='image']`));

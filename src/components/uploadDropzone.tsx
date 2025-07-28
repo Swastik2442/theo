@@ -44,7 +44,10 @@ const useUploadThingInputProps = (input: UTInput, ...args: UTArgs) => {
   const onDragOver = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if ($ut.isUploading) return;
-    if (!draggedOver) setDraggedOver(true);
+    if (!draggedOver && (
+      Array.from(e.dataTransfer.items).some(item => item.kind === "file" && item.type.match("^image/")) ||
+      Array.from(e.dataTransfer.files).some(file => file.type.match("^image/"))
+    )) setDraggedOver(true);
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
