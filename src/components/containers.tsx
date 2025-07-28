@@ -14,6 +14,7 @@ import { useShallow } from "zustand/react/shallow";
 
 import { usePressedKeys } from "~/contexts/pressedKeysProvider";
 import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
+import { useAutoScroll } from "~/hooks/autoScroll";
 import { useKeyPress } from "~/hooks/keyPress";
 import { AlbumContextMenu, ImageContextMenu } from "~/components/contextMenus";
 import {
@@ -184,7 +185,6 @@ export function GridDraggingContainer() {
   );
 }
 
-const scrollSpeed = 5;
 type SelectionBox = {
   left: number;
   top: number;
@@ -215,35 +215,12 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     reset: s.reset
   })));
   const pressedKeysRef = usePressedKeys().keys;
-  const scrollFrameRef = useRef<number | null>(null);
+  const { startScrollingUp, startScrollingDown, stopScrolling } = useAutoScroll();
 
   const [selectionBox, setSelectionBox] = useState<SelectionBox>({ left: 0, top: 0, width: 0, height: 0 });
   const [selectionBoxActive, setSelectionBoxActive] = useState(false);
 
   // BUG: The selection box will not get updated if the mouse remains stationary after auto-scroll
-  const autoScrollDown = useCallback(() => {
-    window.scrollBy(0, scrollSpeed);
-
-    if (!selectingEnabled || scrollFrameRef.current == null) return;         // Stop if cancelled
-    if (window.innerHeight + window.scrollY >= document.body.scrollHeight) { // Stop if at bottom of page
-      cancelAnimationFrame(scrollFrameRef.current);
-      scrollFrameRef.current = null;
-      return;
-    }
-    scrollFrameRef.current = requestAnimationFrame(autoScrollDown);          // Keep looping
-  }, [scrollFrameRef]);
-  const autoScrollUp = useCallback(() => {
-    window.scrollBy(0, -scrollSpeed);
-
-    if (!selectingEnabled || scrollFrameRef.current == null) return; // Stop if cancelled
-    if (window.scrollY <= 0) {                                       // Stop if at top of page
-      cancelAnimationFrame(scrollFrameRef.current);
-      scrollFrameRef.current = null;
-      return;
-    }
-    scrollFrameRef.current = requestAnimationFrame(autoScrollUp);    // Keep looping
-  }, [scrollFrameRef]);
-
   const handleMouseDown: MouseEventHandler<HTMLDivElement> = useCallback((e) => {
     // Only handle if selecting functionality is enabled or on left mouse button clicks
     if (!selectingEnabled || e.button != 0) return;
@@ -285,19 +262,14 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
 
       // Scroll container if mouse goes out of bounds
       if (currentY > window.innerHeight - 50 && currentY < document.body.scrollHeight) {
-        // Near bottom - start scrolling down
-        if (!scrollFrameRef.current) {
-          scrollFrameRef.current = requestAnimationFrame(autoScrollDown);
-        }
+        // Near bottom
+        startScrollingDown();
       } else if (currentY < 50 && window.scrollY > 0) {
-        // Near top - start scrolling up
-        if (!scrollFrameRef.current) {
-          scrollFrameRef.current = requestAnimationFrame(autoScrollUp);
-        }
-      } else if (scrollFrameRef.current) {
-        // Within bounds - stop scrolling
-        cancelAnimationFrame(scrollFrameRef.current);
-        scrollFrameRef.current = null;
+        // Near top
+        startScrollingUp();
+      } else {
+        // Within bounds
+        stopScrolling();
       }
     };
 
@@ -305,30 +277,21 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       setSelectionBoxActive(false);
-      if (scrollFrameRef.current) { // Stop any ongoing auto-scroll
-        cancelAnimationFrame(scrollFrameRef.current);
-        scrollFrameRef.current = null;
-      }
+      stopScrolling();
     };
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [selectionContainerRef, setSelectionBox, setSelectionBoxActive]);
+  }, [setSelectionBox, setSelectionBoxActive, stopScrolling]);
 
-  const handleBlur = useCallback(() => {
-    setSelectionBoxActive(false);
-    if (scrollFrameRef.current) {
-      cancelAnimationFrame(scrollFrameRef.current);
-      scrollFrameRef.current = null;
-    }
-  }, [setSelectionBoxActive, scrollFrameRef]);
+  const handleBlur = useCallback(() => setSelectionBoxActive(false), [setSelectionBoxActive]);
   useEffect(() => {
     document.addEventListener("blur", handleBlur, true);
     return () => document.removeEventListener("blur", handleBlur, true);
   }, [handleBlur]);
 
   /** Checks if an element intersects with the selection box */
-  const isElementIntersecting = useCallback((element: Element) => {
+  const isElementIntersecting = (element: Element) => {
     if (!element.hasAttribute(selectionIdAttr)) return false;
     const itemRect = element.getBoundingClientRect();
     return !(
@@ -337,7 +300,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
       itemRect.y > selectionBox.top + selectionBox.height ||
       itemRect.y + itemRect.height < selectionBox.top
     );
-  }, [selectionBox]);
+  };
 
   // Check which items intersect with selection
   useEffect(() => {
