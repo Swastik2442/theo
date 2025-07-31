@@ -31,6 +31,8 @@ export type SelectionState = {
   draggingMode: boolean;
   /** Reference to the element attached to the mouse when dragging */
   draggingContainerRef: React.RefObject<Nullable<HTMLDivElement>>;
+  /** Album to move the selected items into when dragging */
+  movingIntoAlbum: Nullable<AlbumId>;
 };
 export type SelectionActions = {
   /** Adds an item to the selection, based on pressed keys */
@@ -51,6 +53,8 @@ export type SelectionActions = {
   setSelectingEnabled: (value: boolean) => void;
   /** Enables/Disables Dragging of Items */
   setDraggingMode: (value: boolean) => void;
+  /** Sets the Album to move the selected items into when dragging */
+  setMovingIntoAlbum: (value: Nullable<AlbumId>) => void;
   /** Resets the selection state */
   reset: () => void;
 };
@@ -63,7 +67,8 @@ export const defaultInitState: SelectionState = {
   selectionContainerRef: { current: null },
   selectingEnabled: true,
   draggingMode: false,
-  draggingContainerRef: { current: null }
+  draggingContainerRef: { current: null },
+  movingIntoAlbum: null
 };
 
 export const initSelectionStore = (): SelectionState => ({ ...defaultInitState });
@@ -210,5 +215,6 @@ export const createSelectionStore = (
   }),
   setSelectingEnabled: (value) => set(() => ({ selectingEnabled: value })),
   setDraggingMode: (value) => set(() => ({ draggingMode: value })),
+  setMovingIntoAlbum: (value) => set(() => ({ movingIntoAlbum: value })),
   reset: () => set(() => ({ ...defaultInitState }))
 }));

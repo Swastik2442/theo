@@ -34,42 +34,52 @@ export function AlbumCardContainer({ album, children }: { album: TAlbum; childre
   const {
     selectionMode,
     isSelected,
+    draggingMode,
     addToSelection,
     removeFromSelection
   } = useSelectionStore(useShallow((s) => ({
     selectionMode: s.selectedAlbums.size > 0 || s.selectedImages.size > 0,
     isSelected: s.selectedAlbums.has(album.id),
+    draggingMode: s.draggingMode,
     addToSelection: s.addItem,
     removeFromSelection: s.removeItem
   })));
   const pressedKeysRef = usePressedKeys().keys;
 
   const selectionProps = useMemo(
-    () => createSelectionProps("album", album.id, isSelected),
-    [album.id, isSelected]
+    () => createSelectionProps("album", album.id, isSelected && !draggingMode),
+    [album.id, isSelected, draggingMode]
   );
 
-  if (!selectionMode) {
+  if (selectionMode) {
     return (
       <AlbumContextMenu album={album}>
-        <Link href={`/albums/${album.id}`} onDragStart={(e) => e.preventDefault()} {...selectionProps}>
+        <div onClick={() => {
+          if (isSelected) {
+            removeFromSelection({ id: album.id, type: "album" }, pressedKeysRef.current);
+          } else {
+            addToSelection({ id: album.id, type: "album" }, pressedKeysRef.current);
+          }
+        }} onDragStart={(e) => e.preventDefault()} className="group" {...selectionProps}>
           {children}
-        </Link>
+        </div>
       </AlbumContextMenu>
+    );
+  }
+
+  if (draggingMode) {
+    return (
+      <div className="group" {...selectionProps}>
+        {children}
+      </div>
     );
   }
 
   return (
     <AlbumContextMenu album={album}>
-      <div onClick={() => {
-        if (isSelected) {
-          removeFromSelection({ id: album.id, type: "album" }, pressedKeysRef.current);
-        } else {
-          addToSelection({ id: album.id, type: "album" }, pressedKeysRef.current);
-        }
-      }} onDragStart={(e) => e.preventDefault()} className="group" {...selectionProps}>
+      <Link href={`/albums/${album.id}`} onDragStart={(e) => e.preventDefault()} {...selectionProps}>
         {children}
-      </div>
+      </Link>
     </AlbumContextMenu>
   );
 }
@@ -97,12 +107,18 @@ export function ImageCardContainer({ image, children }: { image: TImage; childre
     [image.id, isSelected]
   );
 
-  if (!selectionMode) {
+  if (selectionMode) {
     return (
       <ImageContextMenu image={image}>
-        <Link href={`/images/${image.id}`} onDragStart={(e) => e.preventDefault()} {...selectionProps}>
+        <div onClick={() => {
+          if (isSelected) {
+            removeFromSelection({ id: image.id, type: "image" }, pressedKeysRef.current);
+          } else {
+            addToSelection({ id: image.id, type: "image" }, pressedKeysRef.current);
+          }
+        }} onDragStart={(e) => e.preventDefault()} className="group" {...selectionProps}>
           {children}
-        </Link>
+        </div>
       </ImageContextMenu>
     );
   }
@@ -125,15 +141,9 @@ export function ImageCardContainer({ image, children }: { image: TImage; childre
 
   return (
     <ImageContextMenu image={image}>
-      <div onClick={() => {
-        if (isSelected) {
-          removeFromSelection({ id: image.id, type: "image" }, pressedKeysRef.current);
-        } else {
-          addToSelection({ id: image.id, type: "image" }, pressedKeysRef.current);
-        }
-      }} onDragStart={(e) => e.preventDefault()} className="group" {...selectionProps}>
+      <Link href={`/images/${image.id}`} onDragStart={(e) => e.preventDefault()} {...selectionProps}>
         {children}
-      </div>
+      </Link>
     </ImageContextMenu>
   );
 }
@@ -164,12 +174,16 @@ export function GridDraggingContainer() {
     draggingEnabled,
     draggingMode,
     setDraggingMode,
+    movingIntoAlbum,
+    setMovingIntoAlbum,
     draggingContainerRef,
     selectionContainerRef
   } = useSelectionStore(useShallow((s) => ({
     draggingEnabled: s.selectedAlbums.size === 0,
     draggingMode: s.draggingMode,
     setDraggingMode: s.setDraggingMode,
+    movingIntoAlbum: s.movingIntoAlbum,
+    setMovingIntoAlbum: s.setMovingIntoAlbum,
     draggingContainerRef: s.draggingContainerRef,
     selectionContainerRef: s.selectionContainerRef
   })));
@@ -204,13 +218,31 @@ export function GridDraggingContainer() {
     setMousePos({ left: startX - shiftX, top: startY - shiftY });
 
     const handleMouseMove = (e: MouseEvent) => {
-      const currentX = e.clientX + window.scrollX - shiftX;
-      const currentY = e.clientY + window.scrollY - shiftY;
-      setMousePos({ left: currentX, top: currentY });
+      const currentX = e.clientX + window.scrollX;
+      const currentY = e.clientY + window.scrollY;
+
+      setMousePos({ left: currentX - shiftX, top: currentY - shiftY });
+
+      let overItem = document.elementFromPoint(currentX, currentY);
+      if (overItem === null) {
+        setMovingIntoAlbum(null);
+        return;
+      }
+      if (!overItem.hasAttribute(selectionTypeAttr))  {
+        overItem = overItem.closest(`[${selectionTypeAttr}="album"]`);
+        if (overItem === null) {
+          setMovingIntoAlbum(null);
+          return;
+        }
+      }
+
+      const elemId = getElementId(overItem);
+      if (elemId !== movingIntoAlbum) setMovingIntoAlbum(elemId);
     };
     const handleMouseUp = (e: MouseEvent) => {
       setDraggingMode(false);
       // TODO: If mouse is over an album, move items to album
+      if (movingIntoAlbum !== null) {}
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };

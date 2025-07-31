@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useShallow } from 'zustand/react/shallow'
@@ -236,10 +236,28 @@ function NavSelectionInfo() {
   );
 }
 
-function NavSelectionOptions() {
-  const onlyImagesSelected = useSelectionStore(useShallow(
-    (state) => state.selectedAlbums.size == 0 && state.selectedImages.size > 0)
+function NavDraggingModeText() {
+  const movingIntoAlbum = useSelectionStore(useShallow((s) => s.movingIntoAlbum));
+  const myAlbums = useRouteStore(useShallow((s) => s.myAlbums));
+  const albumName = useMemo(
+    () => myAlbums.find(v => v.id === movingIntoAlbum)?.name.trim() ?? 'a',
+    [myAlbums, movingIntoAlbum]
   );
+
+  return (
+    <p className="select-none overflow-x-auto text-sm text-gray-500 max-w-[50%]">
+      <span>Moving Images</span>
+      {movingIntoAlbum !== null && <>
+        <span> to </span>
+        <span className="truncate">{albumName}</span>
+        {!albumName.toLowerCase().endsWith("album") && <span> Album</span>}
+      </>}
+    </p>
+  );
+}
+
+function NavSelectionModeOptions() {
+  const onlyImagesSelected = useSelectionStore(useShallow((s) => s.selectedAlbums.size == 0 && s.selectedImages.size > 0));
   return (
     <div className="flex items-center justify-center gap-2">
       <DownloadSelectionButton />
@@ -247,6 +265,13 @@ function NavSelectionOptions() {
       <DeleteSelectionButton />
       <StopSelectionButton />
     </div>
+  );
+}
+
+function NavOptions() {
+  const draggingMode = useSelectionStore(useShallow((s) => s.draggingMode));
+  return (
+    <>{draggingMode ? <NavDraggingModeText /> : <NavSelectionModeOptions />}</>
   );
 }
 
@@ -260,7 +285,7 @@ export function SecondaryNav() {
     <div className="flex items-center justify-between px-4 py-1 gap-2 border-b border-t hover:border-accent print:hidden">
       {selectionMode ? (<>
         <NavSelectionInfo />
-        <NavSelectionOptions />
+        <NavOptions />
       </>) : (<>
         <NavBreadcrumb />
         <NavBreadcrumbOptions />
