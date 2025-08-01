@@ -51,6 +51,14 @@ export function AlbumCardContainer({ album, children }: { album: TAlbum; childre
     [album.id, isSelected, draggingMode]
   );
 
+  if (draggingMode) {
+    return (
+      <div className="group" {...selectionProps}>
+        {children}
+      </div>
+    );
+  }
+
   if (selectionMode) {
     return (
       <AlbumContextMenu album={album}>
@@ -64,14 +72,6 @@ export function AlbumCardContainer({ album, children }: { album: TAlbum; childre
           {children}
         </div>
       </AlbumContextMenu>
-    );
-  }
-
-  if (draggingMode) {
-    return (
-      <div className="group" {...selectionProps}>
-        {children}
-      </div>
     );
   }
 
@@ -107,22 +107,6 @@ export function ImageCardContainer({ image, children }: { image: TImage; childre
     [image.id, isSelected]
   );
 
-  if (selectionMode) {
-    return (
-      <ImageContextMenu image={image}>
-        <div onClick={() => {
-          if (isSelected) {
-            removeFromSelection({ id: image.id, type: "image" }, pressedKeysRef.current);
-          } else {
-            addToSelection({ id: image.id, type: "image" }, pressedKeysRef.current);
-          }
-        }} onDragStart={(e) => e.preventDefault()} className="group" {...selectionProps}>
-          {children}
-        </div>
-      </ImageContextMenu>
-    );
-  }
-
   if (isSelected && draggingMode && draggingContainerRef.current !== null) {
     return (
       <>
@@ -136,6 +120,22 @@ export function ImageCardContainer({ image, children }: { image: TImage; childre
           draggingContainerRef.current
         )}
       </>
+    );
+  }
+
+  if (selectionMode) {
+    return (
+      <ImageContextMenu image={image}>
+        <div onClick={() => {
+          if (isSelected) {
+            removeFromSelection({ id: image.id, type: "image" }, pressedKeysRef.current);
+          } else {
+            addToSelection({ id: image.id, type: "image" }, pressedKeysRef.current);
+          }
+        }} onDragStart={(e) => e.preventDefault()} className="group" {...selectionProps}>
+          {children}
+        </div>
+      </ImageContextMenu>
     );
   }
 
@@ -169,8 +169,10 @@ export function GridSelectionShortcuts({ albums, images }: { albums: Pick<TAlbum
   return null;
 }
 
+/** Container that handles Dragging for Images and Dropping for Albums */
 export function GridDraggingContainer() {
   const {
+    selectingEnabled,
     draggingEnabled,
     draggingMode,
     setDraggingMode,
@@ -179,6 +181,7 @@ export function GridDraggingContainer() {
     draggingContainerRef,
     selectionContainerRef
   } = useSelectionStore(useShallow((s) => ({
+    selectingEnabled: s.selectingEnabled,
     draggingEnabled: s.selectedAlbums.size === 0,
     draggingMode: s.draggingMode,
     setDraggingMode: s.setDraggingMode,
@@ -190,8 +193,8 @@ export function GridDraggingContainer() {
   const [mousePos, setMousePos] = useState({ left: 0, top: 0 });
 
   const handleMouseDown = useCallback((e: MouseEvent) => {
-    // Only handle if dragging is enabled or dragging mode is off or on left mouse button clicks
-    if (!draggingEnabled || draggingMode || e.button != 0) return;
+    // Only handle if selecting/dragging is enabled or dragging mode is off or on left mouse button clicks
+    if (!selectingEnabled || !draggingEnabled || draggingMode || e.button != 0) return;
 
     const rootElement = selectionContainerRef.current;
     if (!rootElement) return;
@@ -211,33 +214,37 @@ export function GridDraggingContainer() {
     if (!(clickedItem && (clickedItem.hasAttribute(selectionTypeAttr) || clickedItem.closest(`[${selectionTypeAttr}="image"]`)))) {
       return;
     }
-    const shiftX = startX - clickedItem.getBoundingClientRect().left;
-    const shiftY = startY - clickedItem.getBoundingClientRect().top;
+    const clickedItemRect = clickedItem.getBoundingClientRect()
+    const shiftX = e.clientX - clickedItemRect.left;
+    const shiftY = e.clientY - clickedItemRect.top;
 
-    setDraggingMode(true);
-    setMousePos({ left: startX - shiftX, top: startY - shiftY });
+    setMousePos({ left: e.clientX + window.scrollX - shiftX, top: e.clientY + window.scrollY - shiftY });
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const currentX = e.clientX + window.scrollX;
-      const currentY = e.clientY + window.scrollY;
+    const handleMouseMove = (ev: MouseEvent) => {
+      if (!draggingMode) setDraggingMode(true);
+      setMousePos({ left: ev.clientX + window.scrollX - shiftX, top: ev.clientY + window.scrollY - shiftY });
 
-      setMousePos({ left: currentX - shiftX, top: currentY - shiftY });
-
-      let overItem = document.elementFromPoint(currentX, currentY);
+      let overItem = document.elementFromPoint(ev.clientX, ev.clientY);
       if (overItem === null) {
-        setMovingIntoAlbum(null);
+        if (movingIntoAlbum !== null) {
+          setMovingIntoAlbum(null);
+        }
         return;
       }
       if (!overItem.hasAttribute(selectionTypeAttr))  {
         overItem = overItem.closest(`[${selectionTypeAttr}="album"]`);
         if (overItem === null) {
-          setMovingIntoAlbum(null);
+          if (movingIntoAlbum !== null) {
+            setMovingIntoAlbum(null);
+          }
           return;
         }
       }
 
       const elemId = getElementId(overItem);
-      if (elemId !== movingIntoAlbum) setMovingIntoAlbum(elemId);
+      if (elemId !== movingIntoAlbum) {
+        setMovingIntoAlbum(elemId);
+      }
     };
     const handleMouseUp = (e: MouseEvent) => {
       setDraggingMode(false);
@@ -248,7 +255,7 @@ export function GridDraggingContainer() {
     };
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
-  }, [setMousePos])
+  }, [setMousePos]);
 
   useEffect(() => {
     document.addEventListener("mousedown", handleMouseDown);

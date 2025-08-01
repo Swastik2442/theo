@@ -2,58 +2,115 @@
 
 import { useCallback, useEffect, useRef } from "react";
 
+/**
+ * Hook to scroll automatically in a particular direction
+ * @param scrollSpeed Speed of Automatic Scrolling
+ */
 export function useAutoScroll(scrollSpeed: number = 5) {
-  const scrollFrameRef = useRef<number | null>(null);
+  const hScrollFrameRef = useRef<number | null>(null);
+  const vScrollFrameRef = useRef<number | null>(null);
 
-  const stopScrolling = useCallback(() => {
-    if (scrollFrameRef.current) {
-      cancelAnimationFrame(scrollFrameRef.current);
-      scrollFrameRef.current = null;
+  const stopHorizontalScrolling = useCallback(() => {
+    if (hScrollFrameRef.current) {
+      cancelAnimationFrame(hScrollFrameRef.current);
+      hScrollFrameRef.current = null;
     }
   }, []);
+  const stopVerticalScrolling = useCallback(() => {
+    if (vScrollFrameRef.current) {
+      cancelAnimationFrame(vScrollFrameRef.current);
+      vScrollFrameRef.current = null;
+    }
+  }, []);
+  const stopScrolling = useCallback(() => {
+    stopHorizontalScrolling();
+    stopVerticalScrolling();
+  }, [stopHorizontalScrolling, stopVerticalScrolling]);
 
   const autoScrollDown = useCallback(() => {
     window.scrollBy(0, scrollSpeed);
 
     // Stop if cancelled
-    if (scrollFrameRef.current == null) return;
+    if (hScrollFrameRef.current == null) return;
     // Stop if at bottom of page
     if (window.innerHeight + window.scrollY >= document.body.scrollHeight) {
-      stopScrolling();
+      stopHorizontalScrolling();
       return;
     }
     // Keep looping
-    scrollFrameRef.current = requestAnimationFrame(autoScrollDown);
+    hScrollFrameRef.current = requestAnimationFrame(autoScrollDown);
   }, [scrollSpeed]);
   const autoScrollUp = useCallback(() => {
     window.scrollBy(0, -scrollSpeed);
 
     // Stop if cancelled
-    if (scrollFrameRef.current == null) return;
+    if (hScrollFrameRef.current == null) return;
     // Stop if at top of page
     if (window.scrollY <= 0) {
-      stopScrolling();
+      stopHorizontalScrolling();
       return;
     }
     // Keep looping
-    scrollFrameRef.current = requestAnimationFrame(autoScrollUp);
+    hScrollFrameRef.current = requestAnimationFrame(autoScrollUp);
+  }, [scrollSpeed]);
+  const autoScrollRight = useCallback(() => {
+    window.scrollBy(scrollSpeed, 0);
+
+    // Stop if cancelled
+    if (vScrollFrameRef.current == null) return;
+    // Stop if at end of page
+    if (window.innerWidth + window.scrollX >= document.body.scrollWidth) {
+      stopVerticalScrolling();
+      return;
+    }
+    // Keep looping
+    vScrollFrameRef.current = requestAnimationFrame(autoScrollRight);
+  }, [scrollSpeed]);
+  const autoScrollLeft = useCallback(() => {
+    window.scrollBy(-scrollSpeed, 0);
+
+    // Stop if cancelled
+    if (vScrollFrameRef.current == null) return;
+    // Stop if at start of page
+    if (window.scrollX <= 0) {
+      stopVerticalScrolling();
+      return;
+    }
+    // Keep looping
+    vScrollFrameRef.current = requestAnimationFrame(autoScrollLeft);
   }, [scrollSpeed]);
 
   const startScrollingDown = useCallback(() => {
-    stopScrolling();
-    scrollFrameRef.current = requestAnimationFrame(autoScrollDown);
-  }, [stopScrolling, autoScrollDown]);
+    stopHorizontalScrolling();
+    hScrollFrameRef.current = requestAnimationFrame(autoScrollDown);
+  }, [stopHorizontalScrolling, autoScrollDown]);
   const startScrollingUp = useCallback(() => {
-    stopScrolling();
-    scrollFrameRef.current = requestAnimationFrame(autoScrollUp);
-  }, [stopScrolling, autoScrollUp]);
+    stopHorizontalScrolling();
+    hScrollFrameRef.current = requestAnimationFrame(autoScrollUp);
+  }, [stopHorizontalScrolling, autoScrollUp]);
+  const startScrollingRight = useCallback(() => {
+    stopVerticalScrolling();
+    vScrollFrameRef.current = requestAnimationFrame(autoScrollRight);
+  }, [stopVerticalScrolling, autoScrollRight]);
+  const startScrollingLeft = useCallback(() => {
+    stopVerticalScrolling();
+    vScrollFrameRef.current = requestAnimationFrame(autoScrollLeft);
+  }, [stopVerticalScrolling, autoScrollLeft]);
 
   useEffect(() => {
     document.addEventListener("blur", stopScrolling, true);
     return () => document.removeEventListener("blur", stopScrolling, true);
   }, [stopScrolling]);
 
-  return { startScrollingUp, startScrollingDown, stopScrolling };
+  return {
+    startScrollingUp,
+    startScrollingDown,
+    startScrollingLeft,
+    startScrollingRight,
+    stopVerticalScrolling,
+    stopHorizontalScrolling,
+    stopScrolling
+  };
 }
 
 export default useAutoScroll;
