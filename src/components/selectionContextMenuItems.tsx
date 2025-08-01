@@ -61,9 +61,9 @@ function CommonSelectionContextMenuItems() {
         Deselect All
       </ContextMenuItem>
       <ContextMenuItem onSelect={() => {
-        modifyImages(Array.from(new Set(myAlbumImages.map((img) => img.id)).difference(selectedImages)));
+        modifyImages(new Set(myAlbumImages.map((img) => img.id)).difference(selectedImages));
         if (isHomePage) {
-          modifyAlbums(Array.from(new Set(myAlbums.map((album) => album.id)).difference(selectedAlbums)));
+          modifyAlbums(new Set(myAlbums.map((album) => album.id)).difference(selectedAlbums));
         }
       }} disabled={notSelectionMode} inset>
         Invert Selected Items

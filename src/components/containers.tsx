@@ -21,7 +21,8 @@ import {
   selectionIdAttr,
   selectionTypeAttr,
   createSelectionProps,
-  getElementId
+  getElementId,
+  selectedAttr
 } from "~/utils/selection";
 import { isMacOS } from "~/utils/platform";
 import { cn } from "~/utils/css";
@@ -179,7 +180,8 @@ export function GridDraggingContainer() {
     movingIntoAlbum,
     setMovingIntoAlbum,
     draggingContainerRef,
-    selectionContainerRef
+    selectionContainerRef,
+    addItem
   } = useSelectionStore(useShallow((s) => ({
     selectingEnabled: s.selectingEnabled,
     draggingEnabled: s.selectedAlbums.size === 0,
@@ -188,8 +190,10 @@ export function GridDraggingContainer() {
     movingIntoAlbum: s.movingIntoAlbum,
     setMovingIntoAlbum: s.setMovingIntoAlbum,
     draggingContainerRef: s.draggingContainerRef,
-    selectionContainerRef: s.selectionContainerRef
+    selectionContainerRef: s.selectionContainerRef,
+    addItem: s.addItem
   })));
+  const pressedKeysRef = usePressedKeys().keys;
   const [mousePos, setMousePos] = useState({ left: 0, top: 0 });
 
   const handleMouseDown = useCallback((e: MouseEvent) => {
@@ -210,10 +214,18 @@ export function GridDraggingContainer() {
     const startY = e.clientY + window.scrollY;
 
     // Ensure click is on an image
-    const clickedItem = document.elementFromPoint(startX, startY);
-    if (!(clickedItem && (clickedItem.hasAttribute(selectionTypeAttr) || clickedItem.closest(`[${selectionTypeAttr}="image"]`)))) {
-      return;
+    let clickedItem = document.elementFromPoint(startX, startY);
+    if (!clickedItem) return;
+    if (!clickedItem.hasAttribute(selectionTypeAttr)) {
+      clickedItem = clickedItem.closest(`[${selectionTypeAttr}="image"]`);
+      if (!clickedItem) return;
     }
+
+    // If on non-selected image, select that image based on pressed key
+    if (clickedItem.getAttribute(selectedAttr) !== "true") {
+      addItem({ type: "image", id: getElementId(clickedItem) }, pressedKeysRef.current);
+    }
+
     const clickedItemRect = clickedItem.getBoundingClientRect()
     const shiftX = e.clientX - clickedItemRect.left;
     const shiftY = e.clientY - clickedItemRect.top;
@@ -294,23 +306,12 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     selectingEnabled,
     draggingMode,
     selectionContainerRef,
-    selectedAlbums,
-    selectedImages,
-    modifyAlbums,
-    modifyImages,
-    setLastSelectedItem,
-    reset
+    modifyItems
   } = useSelectionStore(useShallow((s) => ({
     selectingEnabled: s.selectingEnabled,
     draggingMode: s.draggingMode,
     selectionContainerRef: s.selectionContainerRef,
-    selectedAlbums: s.selectedAlbums,
-    selectedImages: s.selectedImages,
-    lastSelectedItem: s.lastSelectedItem,
-    modifyAlbums: s.modifyAlbums,
-    modifyImages: s.modifyImages,
-    setLastSelectedItem: s.setLastSelectedItem,
-    reset: s.reset
+    modifyItems: s.modifyItems,
   })));
   const pressedKeysRef = usePressedKeys().keys;
   const { startScrollingUp, startScrollingDown, stopScrolling } = useAutoScroll();
@@ -411,41 +412,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     const selectedAlbumIds = albumItems.filter(isElementIntersecting).map(getElementId);
     const selectedImageIds = imageItems.filter(isElementIntersecting).map(getElementId);
 
-    // Handle Ctrl/Meta and Shift keys for multi-selection
-    if (pressedKeysRef.current.shiftKey
-    || (isMacOS() ? pressedKeysRef.current.metaKey : pressedKeysRef.current.ctrlKey)) {
-      if (selectedAlbumIds.length > 0) {
-        modifyAlbums([...selectedAlbums, ...selectedAlbumIds]);
-      }
-      if (selectedImageIds.length > 0) {
-        modifyImages([...selectedImages, ...selectedImageIds]);
-      }
-      if (selectedAlbumIds.length > 0 || selectedImageIds.length > 0) {
-        if (selectedImageIds.length > 0) {
-          setLastSelectedItem({ id: selectedImageIds[selectedImageIds.length - 1]!, type: "image" });
-        } else {
-          setLastSelectedItem({ id: selectedAlbumIds[selectedAlbumIds.length - 1]!, type: "album" });
-        }
-      }
-      return;
-    }
-
-    // No modifier keys - replace selection
-    if (selectedAlbumIds.length > 0) {
-      modifyAlbums(selectedAlbumIds);
-    }
-    if (selectedImageIds.length > 0) {
-      modifyImages(selectedImageIds);
-    }
-    if (selectedAlbumIds.length > 0 || selectedImageIds.length > 0) {
-      if (selectedImageIds.length > 0) {
-        setLastSelectedItem({ id: selectedImageIds[selectedImageIds.length - 1]!, type: "image" });
-      } else {
-        setLastSelectedItem({ id: selectedAlbumIds[selectedAlbumIds.length - 1]!, type: "album" });
-      }
-    } else {
-      reset();
-    }
+    modifyItems(selectedAlbumIds, selectedImageIds, pressedKeysRef.current);
   }, [selectionBox]);
 
   return (
