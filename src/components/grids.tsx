@@ -56,13 +56,13 @@ function AlbumCard({ album }: { album: TAlbum }) {
   );
 }
 
-function ImageCard({ image }: { image: TImage }) {
+function ImageCard({ image, priority }: { image: TImage; priority?: boolean; }) {
   return (
     <ImageCardContainer image={image}>
       <div className="relative">
         <ImageWithoutDrag
           src={image.url} alt={image.name}
-          width={192} height={192}
+          width={192} height={192} priority={priority}
           className={cn("aspect-square object-contain", selectedContainerStyles)}
         />
         <SelectedCheck />
@@ -83,9 +83,9 @@ export async function AlbumsAndImagesGrid({ albums, images }: { albums: TAlbum[]
             key: `album-${album.id}`,
             component: <AlbumCard album={album} />
           })),
-          ...images.map((image) => ({
+          ...images.map((image, idx) => ({
             key: `image-${image.id}`,
-            component: <ImageCard image={image} />
+            component: <ImageCard image={image} priority={idx < 20} />
           })),
         ]} />
       </GridSelectionContainer>

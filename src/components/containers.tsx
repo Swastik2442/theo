@@ -2,29 +2,33 @@
 
 import {
   MouseEventHandler,
+  startTransition,
+  useActionState,
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState
 } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useShallow } from "zustand/react/shallow";
+import { toast } from "sonner";
 
+import { moveImagesAction } from "~/server/actions";
 import { usePressedKeys } from "~/contexts/pressedKeysProvider";
+import { useRouteStore } from "~/contexts/stores/routeStoreProvider";
 import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
 import { useAutoScroll } from "~/hooks/autoScroll";
 import { useKeyPress } from "~/hooks/keyPress";
 import { AlbumContextMenu, ImageContextMenu } from "~/components/contextMenus";
 import {
-  selectionIdAttr,
-  selectionTypeAttr,
   createSelectionProps,
   getElementId,
-  selectedAttr
+  selectedAttr,
+  selectionIdAttr,
+  selectionTypeAttr
 } from "~/utils/selection";
-import { isMacOS } from "~/utils/platform";
 import { cn } from "~/utils/css";
 
 type TAlbum = Parameters<typeof AlbumContextMenu>['0']['album'];
@@ -170,35 +174,43 @@ export function GridSelectionShortcuts({ albums, images }: { albums: Pick<TAlbum
   return null;
 }
 
+// TODO: Fix dragging and selecting to ensure working while scrolling
+
 /** Container that handles Dragging for Images and Dropping for Albums */
 export function GridDraggingContainer() {
+  const router = useRouter();
+  const myAlbums = useRouteStore(useShallow((s) => s.myAlbums));
   const {
+    selectedImages,
     selectingEnabled,
-    draggingEnabled,
     draggingMode,
     setDraggingMode,
     movingIntoAlbum,
     setMovingIntoAlbum,
     draggingContainerRef,
     selectionContainerRef,
-    addItem
+    addItem,
+    reset
   } = useSelectionStore(useShallow((s) => ({
+    selectedImages: s.selectedImages,
     selectingEnabled: s.selectingEnabled,
-    draggingEnabled: s.selectedAlbums.size === 0,
     draggingMode: s.draggingMode,
     setDraggingMode: s.setDraggingMode,
     movingIntoAlbum: s.movingIntoAlbum,
     setMovingIntoAlbum: s.setMovingIntoAlbum,
     draggingContainerRef: s.draggingContainerRef,
     selectionContainerRef: s.selectionContainerRef,
-    addItem: s.addItem
+    addItem: s.addItem,
+    reset: s.reset
   })));
   const pressedKeysRef = usePressedKeys().keys;
   const [mousePos, setMousePos] = useState({ left: 0, top: 0 });
 
+  const [state, formAction, pending] = useActionState(moveImagesAction, { status: "init" });
+
   const handleMouseDown = useCallback((e: MouseEvent) => {
-    // Only handle if selecting/dragging is enabled or dragging mode is off or on left mouse button clicks
-    if (!selectingEnabled || !draggingEnabled || draggingMode || e.button != 0) return;
+    // Only handle if selecting is enabled or dragging mode is off or on left mouse button clicks
+    if (pending || !selectingEnabled || draggingMode || e.button != 0) return;
 
     const rootElement = selectionContainerRef.current;
     if (!rootElement) return;
@@ -231,37 +243,44 @@ export function GridDraggingContainer() {
     const shiftY = e.clientY - clickedItemRect.top;
 
     setMousePos({ left: e.clientX + window.scrollX - shiftX, top: e.clientY + window.scrollY - shiftY });
+    setMovingIntoAlbum(null);
 
     const handleMouseMove = (ev: MouseEvent) => {
       if (!draggingMode) setDraggingMode(true);
       setMousePos({ left: ev.clientX + window.scrollX - shiftX, top: ev.clientY + window.scrollY - shiftY });
 
-      let overItem = document.elementFromPoint(ev.clientX, ev.clientY);
-      if (overItem === null) {
+      const overItems = document.elementsFromPoint(ev.clientX, ev.clientY);
+      const overItem = overItems.find(v => v.getAttribute(selectionTypeAttr) === "album");
+
+      if (overItem === undefined) {
         if (movingIntoAlbum !== null) {
           setMovingIntoAlbum(null);
         }
         return;
       }
-      if (!overItem.hasAttribute(selectionTypeAttr))  {
-        overItem = overItem.closest(`[${selectionTypeAttr}="album"]`);
-        if (overItem === null) {
-          if (movingIntoAlbum !== null) {
-            setMovingIntoAlbum(null);
-          }
-          return;
-        }
-      }
 
+      // BUG: Moving into Album not being set to null when not over any album
       const elemId = getElementId(overItem);
       if (elemId !== movingIntoAlbum) {
         setMovingIntoAlbum(elemId);
       }
     };
-    const handleMouseUp = (e: MouseEvent) => {
+    const handleMouseUp = () => {
+      // BUG: the conditions are not being met even when they must to be meeting - refresh after save somehow makes it work
+      if (movingIntoAlbum !== null && selectedImages.size > 0) {
+        startTransition(() => {
+          const formData = new FormData();
+          formData.append("albumId", JSON.stringify(movingIntoAlbum));
+          formData.append("imageIds", JSON.stringify(Array.from(selectedImages)));
+          formAction(formData)
+          toast.loading("Moving Images", {
+            id: "move_images_begin",
+            duration: 60000
+          });
+        });
+      }
+
       setDraggingMode(false);
-      // TODO: If mouse is over an album, move items to album
-      if (movingIntoAlbum !== null) {}
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
@@ -274,12 +293,27 @@ export function GridDraggingContainer() {
     return () => document.removeEventListener("mousedown", handleMouseDown);
   }, [handleMouseDown]);
 
+  useEffect(() => {
+    toast.dismiss("move_images_begin");
+    if (state.status == 'error') {
+      toast[state.status](state.message, {
+        duration: 5000,
+        description: state.data
+      });
+    } else if (state.status == 'success') {
+      const albumName = movingIntoAlbum === null ? "Home" : myAlbums.find(v => v.id === movingIntoAlbum)?.name;
+      toast.success(`${selectedImages.size} Images moved${albumName && ` to ${albumName}`}`);
+      reset();
+      router.refresh();
+    }
+  }, [state]);
+
   return (
     <div
       ref={draggingContainerRef}
       style={mousePos}
       className={cn(
-        "cursor-move absolute *:absolute",
+        "size-56 cursor-move absolute *:absolute",
         "*:first:inset-0 *:first:z-[10]",
         "*:nth-[2]:-top-1.5 *:nth-[2]:left-1.5 *:nth-[2]:z-[9]",
         "*:nth-[3]:-top-3 *:nth-[3]:left-3 *:nth-[3]:z-[8]",

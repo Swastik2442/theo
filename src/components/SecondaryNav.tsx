@@ -246,11 +246,10 @@ function NavDraggingModeText() {
 
   return (
     <p className="select-none overflow-x-auto text-sm text-gray-500 max-w-[50%]">
-      <span>Moving Images</span>
+      <span>{movingIntoAlbum === null ? 'Moving' : 'Move'} Images</span>
       {movingIntoAlbum !== null && <>
         <span> to </span>
         <span className="truncate">{albumName}</span>
-        {!albumName.toLowerCase().endsWith("album") && <span> Album</span>}
       </>}
     </p>
   );
