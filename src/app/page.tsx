@@ -1,3 +1,5 @@
+import { auth } from "@clerk/nextjs/server";
+
 import { getMyAlbums, getMyImages } from "~/server/queries";
 import { AlbumsAndImagesGrid } from "~/components/grids";
 import { ClientAlbumsAndImagesSync } from "~/components/clientSync";
@@ -10,6 +12,9 @@ export const dynamic = "force-dynamic";
   TODO: Pagination or Infinite Scroll
 */
 export default async function HomePage() {
+  const { userId } = await auth();
+  if (!userId) return <></>;
+
   const albums = await getMyAlbums();
   const images = await getMyImages();
   return (

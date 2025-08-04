@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
-import { ClientAlbumSync } from '~/components/clientSync';
-import { ImagesGrid } from "~/components/grids";
+import { auth } from '@clerk/nextjs/server';
 
 import { getAlbum, getAlbumImages } from "~/server/queries";
+import { ClientAlbumSync } from '~/components/clientSync';
+import { ImagesGrid } from "~/components/grids";
 
 // Does not Cache the Page
 export const dynamic = "force-dynamic";
@@ -10,6 +11,9 @@ export const dynamic = "force-dynamic";
 export default async function Album(
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { userId } = await auth();
+  if (!userId) return <></>;
+
   const { id } = await params;
   const idAsNumber = Number(id);
   if (isNaN(idAsNumber)) throw new Error("Invalid ID");

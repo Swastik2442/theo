@@ -17,6 +17,7 @@ import TopNav from "~/components/TopNav";
 import SecondaryNav from "~/components/SecondaryNav";
 import { Toaster } from "~/components/ui/sonner";
 import { SimpleUploadDropzone } from "~/components/uploadDropzone";
+import { NotSignedIn } from "~/components/empty";
 
 export const metadata: Metadata = {
   title: "Theo",
@@ -51,7 +52,7 @@ export default function RootLayout({
               </SimpleUploadDropzone>
             </SignedIn>
             <SignedOut>
-              <p className="p-4 text-2xl text-center cursor-default select-none">Sign in to see Images</p>
+              <NotSignedIn />
             </SignedOut>
           </div>
           {modal}
