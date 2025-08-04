@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { ArrowUpRight, Check } from "lucide-react";
 
 import { albums, images } from "~/server/db/schema"
 import {
@@ -9,6 +9,7 @@ import {
   ImageCardContainer
 } from "~/components/containers";
 import ImageWithoutDrag from "~/components/ImageWithoutDrag";
+import { UploadIcon } from "~/components/ui/icons";
 import { gradientFromString } from "~/utils/color";
 import { fileName } from "~/utils/file";
 import { cn } from "~/utils/css";
@@ -74,7 +75,18 @@ function ImageCard({ image, priority }: { image: TImage; priority?: boolean; }) 
   );
 }
 
-export async function AlbumsAndImagesGrid({ albums, images }: { albums: TAlbum[]; images: TImage[] }) {
+export function AlbumsAndImagesGrid({ albums, images }: { albums: TAlbum[]; images: TImage[]; }) {
+  if (albums.length === 0 && images.length === 0) return (
+    <div className="w-full h-[80%] flex flex-col gap-y-3 items-center justify-center text-gray-500 select-none">
+      <ImageWithoutDrag src="/thumbnail.png" alt="Thumbnail" width={57} height={50} />
+      <div className="flex flex-col text-center gap-x-1">
+        <span>Start creating your online gallery</span>
+        <span>by uploading images using the <UploadIcon className="inline-block size-5 fill-background" /><span className="sr-only">upload</span> button above <ArrowUpRight className="inline-block size-5" /></span>
+        <span>or by dragging and dropping images here</span>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <GridSelectionContainer>
@@ -91,6 +103,31 @@ export async function AlbumsAndImagesGrid({ albums, images }: { albums: TAlbum[]
       </GridSelectionContainer>
       <GridDraggingContainer />
       <GridSelectionShortcuts albums={albums} images={images} />
+    </>
+  );
+}
+
+export function ImagesGrid({ images }: { images: TImage[]; }) {
+  if (images.length === 0) return (
+    <div className="w-full h-[80%] flex flex-col gap-y-3 items-center justify-center text-gray-500 select-none">
+      <ImageWithoutDrag src="/thumbnail.png" alt="Thumbnail" width={57} height={50} />
+      <div className="flex flex-col text-center gap-x-1">
+        <span>Upload images using the <UploadIcon className="inline-block size-5 fill-background" /><span className="sr-only">upload</span> button above <ArrowUpRight className="inline-block size-5" /></span>
+        <span>or by dragging and dropping images here</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <GridSelectionContainer>
+        <CustomGrid items={images.map((image, idx) => ({
+          key: `image-${image.id}`,
+          component: <ImageCard image={image} priority={idx < 20} />
+        }))} />
+      </GridSelectionContainer>
+      <GridDraggingContainer />
+      <GridSelectionShortcuts images={images} />
     </>
   );
 }

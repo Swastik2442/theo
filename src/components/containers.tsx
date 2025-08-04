@@ -154,7 +154,7 @@ export function ImageCardContainer({ image, children }: { image: TImage; childre
 }
 
 /** Adds Keyboard Shortcuts for Selection Options in the Grid */
-export function GridSelectionShortcuts({ albums, images }: { albums: Pick<TAlbum, "id">[]; images: Pick<TImage, "id">[] }) {
+export function GridSelectionShortcuts({ albums, images }: { albums?: Pick<TAlbum, "id">[]; images?: Pick<TImage, "id">[] }) {
   const { modifyAlbums, modifyImages, reset } = useSelectionStore(useShallow((s) => ({
     modifyAlbums: s.modifyAlbums,
     modifyImages: s.modifyImages,
@@ -163,8 +163,8 @@ export function GridSelectionShortcuts({ albums, images }: { albums: Pick<TAlbum
 
   useKeyPress(reset, { key: "Escape" });
   useKeyPress(() => {
-    modifyAlbums(albums.map((a) => a.id));
-    modifyImages(images.map((i) => i.id));
+    if (albums !== undefined) modifyAlbums(albums.map((a) => a.id));
+    if (images !== undefined) modifyImages(images.map((i) => i.id));
   }, { key: "a", ctrlOrMetaKey: true });
 
   useEffect(() => {
