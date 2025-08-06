@@ -208,7 +208,23 @@ export function GridDraggingContainer() {
 
   const [state, formAction, pending] = useActionState(moveImagesAction, { status: "init" });
 
-  const handleMouseDown = useCallback((e: MouseEvent) => {
+  // BUG: the conditions are not being met even when they must to be meeting - refresh after save somehow makes it work
+  const moveSelectionToAlbum = () => {
+    if (movingIntoAlbum !== null && selectedImages.size > 0) {
+      startTransition(() => {
+        const formData = new FormData();
+        formData.append("albumId", JSON.stringify(movingIntoAlbum));
+        formData.append("imageIds", JSON.stringify(Array.from(selectedImages)));
+        formAction(formData)
+        toast.loading("Moving Images", {
+          id: "move_images_begin",
+          duration: 60000
+        });
+      });
+    }
+  };
+
+  const handleMouseDown = (e: MouseEvent) => {
     // Only handle if selecting is enabled or dragging mode is off or on left mouse button clicks
     if (pending || !selectingEnabled || draggingMode || e.button != 0) return;
 
@@ -242,56 +258,49 @@ export function GridDraggingContainer() {
     const shiftX = e.clientX - clickedItemRect.left;
     const shiftY = e.clientY - clickedItemRect.top;
 
-    setMousePos({ left: e.clientX + window.scrollX - shiftX, top: e.clientY + window.scrollY - shiftY });
+    setMousePos({
+      left: e.clientX + window.scrollX - shiftX,
+      top: e.clientY + window.scrollY - shiftY
+    });
     setMovingIntoAlbum(null);
 
+    let movedOnce = false;
     const handleMouseMove = (ev: MouseEvent) => {
-      if (!draggingMode) setDraggingMode(true);
-      setMousePos({ left: ev.clientX + window.scrollX - shiftX, top: ev.clientY + window.scrollY - shiftY });
+      if (!draggingMode && !movedOnce) {
+        setDraggingMode(true);
+        movedOnce = true;
+      }
+      setMousePos({
+        left: ev.clientX + window.scrollX - shiftX,
+        top: ev.clientY + window.scrollY - shiftY
+      });
 
-      const overItems = document.elementsFromPoint(ev.clientX, ev.clientY);
-      const overItem = overItems.find(v => v.getAttribute(selectionTypeAttr) === "album");
-
+      const overItem = document.elementsFromPoint(ev.clientX, ev.clientY).find(
+        v => v.getAttribute(selectionTypeAttr) === "album"
+      );
       if (overItem === undefined) {
-        if (movingIntoAlbum !== null) {
-          setMovingIntoAlbum(null);
-        }
+        setMovingIntoAlbum(null);
         return;
       }
 
-      // BUG: Moving into Album not being set to null when not over any album
       const elemId = getElementId(overItem);
-      if (elemId !== movingIntoAlbum) {
-        setMovingIntoAlbum(elemId);
-      }
+      setMovingIntoAlbum(elemId);
     };
     const handleMouseUp = () => {
-      // BUG: the conditions are not being met even when they must to be meeting - refresh after save somehow makes it work
-      if (movingIntoAlbum !== null && selectedImages.size > 0) {
-        startTransition(() => {
-          const formData = new FormData();
-          formData.append("albumId", JSON.stringify(movingIntoAlbum));
-          formData.append("imageIds", JSON.stringify(Array.from(selectedImages)));
-          formAction(formData)
-          toast.loading("Moving Images", {
-            id: "move_images_begin",
-            duration: 60000
-          });
-        });
-      }
-
-      setDraggingMode(false);
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
+
+      moveSelectionToAlbum();
+      setDraggingMode(false);
     };
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
-  }, [setMousePos]);
+  };
 
   useEffect(() => {
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
-  }, [handleMouseDown]);
+    selectionContainerRef.current?.addEventListener("mousedown", handleMouseDown);
+    return () => selectionContainerRef.current?.removeEventListener("mousedown", handleMouseDown);
+  }, []);
 
   useEffect(() => {
     toast.dismiss("move_images_begin");

@@ -240,7 +240,7 @@ function NavDraggingModeText() {
   const movingIntoAlbum = useSelectionStore(useShallow((s) => s.movingIntoAlbum));
   const myAlbums = useRouteStore(useShallow((s) => s.myAlbums));
   const albumName = useMemo(
-    () => myAlbums.find(v => v.id === movingIntoAlbum)?.name.trim() ?? 'a',
+    () => movingIntoAlbum === null ? 'a' : (myAlbums.find(v => v.id === movingIntoAlbum)?.name.trim() ?? 'a'),
     [myAlbums, movingIntoAlbum]
   );
 
