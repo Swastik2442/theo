@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 
 /**
  * Hook to scroll automatically in a particular direction
- * @param scrollSpeed Speed of Automatic Scrolling
+ * @param scrollSpeed Speed of Automatic Scrolling. Defaults to 5.
  */
 export function useAutoScroll(scrollSpeed: number = 5) {
   const hScrollFrameRef = useRef<number | null>(null);
@@ -31,70 +31,70 @@ export function useAutoScroll(scrollSpeed: number = 5) {
     window.scrollBy(0, scrollSpeed);
 
     // Stop if cancelled
-    if (hScrollFrameRef.current == null) return;
+    if (vScrollFrameRef.current == null) return;
     // Stop if at bottom of page
     if (window.innerHeight + window.scrollY >= document.body.scrollHeight) {
       stopHorizontalScrolling();
       return;
     }
     // Keep looping
-    hScrollFrameRef.current = requestAnimationFrame(autoScrollDown);
+    vScrollFrameRef.current = requestAnimationFrame(autoScrollDown);
   }, [scrollSpeed]);
   const autoScrollUp = useCallback(() => {
     window.scrollBy(0, -scrollSpeed);
 
     // Stop if cancelled
-    if (hScrollFrameRef.current == null) return;
+    if (vScrollFrameRef.current == null) return;
     // Stop if at top of page
     if (window.scrollY <= 0) {
       stopHorizontalScrolling();
       return;
     }
     // Keep looping
-    hScrollFrameRef.current = requestAnimationFrame(autoScrollUp);
+    vScrollFrameRef.current = requestAnimationFrame(autoScrollUp);
   }, [scrollSpeed]);
   const autoScrollRight = useCallback(() => {
     window.scrollBy(scrollSpeed, 0);
 
     // Stop if cancelled
-    if (vScrollFrameRef.current == null) return;
+    if (hScrollFrameRef.current == null) return;
     // Stop if at end of page
     if (window.innerWidth + window.scrollX >= document.body.scrollWidth) {
       stopVerticalScrolling();
       return;
     }
     // Keep looping
-    vScrollFrameRef.current = requestAnimationFrame(autoScrollRight);
+    hScrollFrameRef.current = requestAnimationFrame(autoScrollRight);
   }, [scrollSpeed]);
   const autoScrollLeft = useCallback(() => {
     window.scrollBy(-scrollSpeed, 0);
 
     // Stop if cancelled
-    if (vScrollFrameRef.current == null) return;
+    if (hScrollFrameRef.current == null) return;
     // Stop if at start of page
     if (window.scrollX <= 0) {
       stopVerticalScrolling();
       return;
     }
     // Keep looping
-    vScrollFrameRef.current = requestAnimationFrame(autoScrollLeft);
+    hScrollFrameRef.current = requestAnimationFrame(autoScrollLeft);
   }, [scrollSpeed]);
 
   const startScrollingDown = useCallback(() => {
     stopHorizontalScrolling();
-    hScrollFrameRef.current = requestAnimationFrame(autoScrollDown);
+    vScrollFrameRef.current = requestAnimationFrame(autoScrollDown);
   }, [stopHorizontalScrolling, autoScrollDown]);
   const startScrollingUp = useCallback(() => {
     stopHorizontalScrolling();
-    hScrollFrameRef.current = requestAnimationFrame(autoScrollUp);
+    vScrollFrameRef.current = requestAnimationFrame(autoScrollUp);
   }, [stopHorizontalScrolling, autoScrollUp]);
   const startScrollingRight = useCallback(() => {
     stopVerticalScrolling();
-    vScrollFrameRef.current = requestAnimationFrame(autoScrollRight);
+    hScrollFrameRef.current = requestAnimationFrame(autoScrollRight);
   }, [stopVerticalScrolling, autoScrollRight]);
   const startScrollingLeft = useCallback(() => {
     stopVerticalScrolling();
-    vScrollFrameRef.current = requestAnimationFrame(autoScrollLeft);
+    hScrollFrameRef.current = requestAnimationFrame(autoScrollLeft);
   }, [stopVerticalScrolling, autoScrollLeft]);
 
   useEffect(() => {

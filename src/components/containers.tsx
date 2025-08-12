@@ -175,8 +175,6 @@ export function GridSelectionShortcuts({ albums, images }: { albums?: Pick<TAlbu
   return null;
 }
 
-// TODO: Fix dragging and selecting to ensure working while scrolling
-
 /** Container that handles Dragging for Images and Dropping for Albums */
 export function GridDraggingContainer() {
   const router = useRouter();
@@ -205,8 +203,9 @@ export function GridDraggingContainer() {
     reset: s.reset
   })));
   const pressedKeysRef = usePressedKeys().keys;
-  const [mousePos, setMousePos] = useState({ left: 0, top: 0 });
+  const { startScrollingUp, startScrollingDown, stopVerticalScrolling } = useAutoScroll();
 
+  const [containerPos, setContainerPos] = useState({ left: 0, top: 0 });
   const [state, formAction, pending] = useActionState(moveImagesAction, { status: "init" });
 
   // NOTE: the refs are required as without them, the latest values are not captured, even though Zustand useShallow is used
@@ -261,11 +260,8 @@ export function GridDraggingContainer() {
     || e.clientY < rootRect.top
     || e.clientY > rootRect.bottom - 2) return;
 
-    const startX = e.clientX + window.scrollX;
-    const startY = e.clientY + window.scrollY;
-
     // Ensure click is on an image
-    let clickedItem = document.elementFromPoint(startX, startY);
+    let clickedItem = document.elementFromPoint(e.clientX, e.clientY);
     if (!clickedItem) return;
     if (!clickedItem.hasAttribute(selectionTypeAttr)) {
       clickedItem = clickedItem.closest(`[${selectionTypeAttr}="image"]`);
@@ -281,9 +277,9 @@ export function GridDraggingContainer() {
     const shiftX = e.clientX - clickedItemRect.left;
     const shiftY = e.clientY - clickedItemRect.top;
 
-    setMousePos({
-      left: e.clientX + window.scrollX - shiftX,
-      top: e.clientY + window.scrollY - shiftY
+    setContainerPos({
+      left: e.clientX - shiftX,
+      top: e.clientY - shiftY
     });
     setMovingIntoAlbum(null);
 
@@ -293,9 +289,9 @@ export function GridDraggingContainer() {
         setDraggingMode(true);
         movedOnce = true;
       }
-      setMousePos({
-        left: ev.clientX + window.scrollX - shiftX,
-        top: ev.clientY + window.scrollY - shiftY
+      setContainerPos({
+        left: ev.clientX - shiftX,
+        top: ev.clientY - shiftY
       });
 
       const overItem = document.elementsFromPoint(ev.clientX, ev.clientY).find(
@@ -303,22 +299,38 @@ export function GridDraggingContainer() {
       );
       if (overItem === undefined) {
         setMovingIntoAlbum(null);
-        return;
+      } else {
+        const elemId = getElementId(overItem);
+        setMovingIntoAlbum(elemId);
       }
 
-      const elemId = getElementId(overItem);
-      setMovingIntoAlbum(elemId);
+      // Scroll container if mouse goes out of bounds
+      if (ev.clientY > window.innerHeight - 50 && ev.clientY < document.body.scrollHeight) {
+        // Near bottom
+        startScrollingDown();
+      } else if (ev.clientY < 50 && window.scrollY > 0) {
+        // Near top
+        startScrollingUp();
+      } else {
+        // Within bounds
+        stopVerticalScrolling();
+      }
     };
     const handleMouseUp = () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
 
+      stopVerticalScrolling();
       moveSelectionToAlbum();
       setDraggingMode(false);
     };
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
-  }, [pending, selectingEnabled, draggingMode, setDraggingMode, setMovingIntoAlbum, addItem, formAction]);
+  }, [
+    pending, selectingEnabled, draggingMode,
+    addItem, formAction, setDraggingMode, setMovingIntoAlbum,
+    startScrollingDown, startScrollingUp, stopVerticalScrolling
+  ]);
 
   useEffect(() => {
     selectionContainerRef.current?.addEventListener("mousedown", handleMouseDown);
@@ -328,9 +340,9 @@ export function GridDraggingContainer() {
   return (
     <div
       ref={draggingContainerRef}
-      style={mousePos}
+      style={containerPos}
       className={cn(
-        "size-56 cursor-move absolute *:absolute",
+        "size-56 cursor-move fixed *:absolute",
         "*:first:inset-0 *:first:z-[10]",
         "*:nth-[2]:-top-1.5 *:nth-[2]:left-1.5 *:nth-[2]:z-[9]",
         "*:nth-[3]:-top-3 *:nth-[3]:left-3 *:nth-[3]:z-[8]",
@@ -365,7 +377,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
     modifyItems: s.modifyItems,
   })));
   const pressedKeysRef = usePressedKeys().keys;
-  const { startScrollingUp, startScrollingDown, stopScrolling } = useAutoScroll();
+  const { startScrollingUp, startScrollingDown, stopVerticalScrolling } = useAutoScroll();
 
   const [selectionBox, setSelectionBox] = useState<SelectionBox>({ left: 0, top: 0, width: 0, height: 0 });
   const [selectionBoxActive, setSelectionBoxActive] = useState(false);
@@ -419,7 +431,7 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
         startScrollingUp();
       } else {
         // Within bounds
-        stopScrolling();
+        stopVerticalScrolling();
       }
     };
 
@@ -427,12 +439,12 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       setSelectionBoxActive(false);
-      stopScrolling();
+      stopVerticalScrolling();
     };
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [setSelectionBox, setSelectionBoxActive, stopScrolling]);
+  }, [setSelectionBox, setSelectionBoxActive, startScrollingDown, startScrollingUp, stopVerticalScrolling]);
 
   const handleBlur = useCallback(() => setSelectionBoxActive(false), [setSelectionBoxActive]);
   useEffect(() => {
