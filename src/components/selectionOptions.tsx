@@ -196,7 +196,7 @@ export function MoveSelectionDialog({
       });
     } else if (state.status == 'success') {
       const albumName = selectedAlbumId === null ? "Home" : albums.find(v => v.id === selectedAlbumId)?.name;
-      toast.success(`${selectedImagesIDs.size} Images moved${albumName && ` to ${albumName}`}`);
+      toast.success(`${selectedImagesIDs.size} Image${selectedImagesIDs.size === 1 ? '' : 's'} moved${albumName && ` to ${albumName}`}`);
       setDialogOpenAction(false);
       reset();
       router.refresh();

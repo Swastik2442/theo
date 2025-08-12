@@ -7,6 +7,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState
 } from "react";
 import { createPortal } from "react-dom";
@@ -208,14 +209,20 @@ export function GridDraggingContainer() {
 
   const [state, formAction, pending] = useActionState(moveImagesAction, { status: "init" });
 
-  // BUG: the conditions are not being met even when they must to be meeting - refresh after save somehow makes it work
+  // NOTE: the refs are required as without them, the latest values are not captured, even though Zustand useShallow is used
+  const movingIntoAlbumRef = useRef(movingIntoAlbum);
+  const selectedImagesRef = useRef(selectedImages);
+  useEffect(() => { movingIntoAlbumRef.current = movingIntoAlbum; }, [movingIntoAlbum]);
+  useEffect(() => { selectedImagesRef.current = selectedImages; }, [selectedImages]);
+
+  /** Moves the selected Images to the specified album */
   const moveSelectionToAlbum = () => {
-    if (movingIntoAlbum !== null && selectedImages.size > 0) {
+    if (movingIntoAlbumRef.current !== null && selectedImagesRef.current.size > 0) {
       startTransition(() => {
         const formData = new FormData();
-        formData.append("albumId", JSON.stringify(movingIntoAlbum));
-        formData.append("imageIds", JSON.stringify(Array.from(selectedImages)));
-        formAction(formData)
+        formData.append("albumId", JSON.stringify(movingIntoAlbumRef.current));
+        formData.append("imageIds", JSON.stringify(Array.from(selectedImagesRef.current)));
+        formAction(formData);
         toast.loading("Moving Images", {
           id: "move_images_begin",
           duration: 60000
@@ -224,7 +231,23 @@ export function GridDraggingContainer() {
     }
   };
 
-  const handleMouseDown = (e: MouseEvent) => {
+  // Handle Form Submission Result
+  useEffect(() => {
+    toast.dismiss("move_images_begin");
+    if (state.status == 'error') {
+      toast[state.status](state.message, {
+        duration: 5000,
+        description: state.data
+      });
+    } else if (state.status == 'success') {
+      const albumName = movingIntoAlbum === null ? "Home" : myAlbums.find(v => v.id === movingIntoAlbum)?.name;
+      toast.success(`${selectedImages.size} Image${selectedImages.size === 1 ? '' : 's'} moved${albumName && ` to ${albumName}`}`);
+      reset();
+      router.refresh();
+    }
+  }, [state]);
+
+  const handleMouseDown = useCallback((e: MouseEvent) => {
     // Only handle if selecting is enabled or dragging mode is off or on left mouse button clicks
     if (pending || !selectingEnabled || draggingMode || e.button != 0) return;
 
@@ -295,27 +318,12 @@ export function GridDraggingContainer() {
     };
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
-  };
+  }, [pending, selectingEnabled, draggingMode, setDraggingMode, setMovingIntoAlbum, addItem, formAction]);
 
   useEffect(() => {
     selectionContainerRef.current?.addEventListener("mousedown", handleMouseDown);
     return () => selectionContainerRef.current?.removeEventListener("mousedown", handleMouseDown);
-  }, []);
-
-  useEffect(() => {
-    toast.dismiss("move_images_begin");
-    if (state.status == 'error') {
-      toast[state.status](state.message, {
-        duration: 5000,
-        description: state.data
-      });
-    } else if (state.status == 'success') {
-      const albumName = movingIntoAlbum === null ? "Home" : myAlbums.find(v => v.id === movingIntoAlbum)?.name;
-      toast.success(`${selectedImages.size} Images moved${albumName && ` to ${albumName}`}`);
-      reset();
-      router.refresh();
-    }
-  }, [state]);
+  }, [handleMouseDown]);
 
   return (
     <div
