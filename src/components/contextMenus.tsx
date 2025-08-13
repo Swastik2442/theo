@@ -1,8 +1,10 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
 import { toast } from "sonner";
 
 import { albums, images } from "~/server/db/schema"
+import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
 import useClientHost from "~/hooks/clientHost";
 import {
   ContextMenu,
@@ -21,14 +23,14 @@ import { copyImageToClipboard, downloadAsBlob, typesObjFromFileName } from "~/ut
 type TAlbum = Pick<typeof albums.$inferSelect, "id">;
 type TImage = Pick<typeof images.$inferSelect, "id" | "name" | "url">;
 
-// TODO: Stop triggering elements under context menu when clicked - onClick={e => e.stopPropagation()}
 export function ImageContextMenu({ image, children }: { image: TImage; children: React.ReactNode; }) {
+  const setSelectingEnabled = useSelectionStore(useShallow((s) => s.setSelectingEnabled));
   const fullUrl = useClientHost();
   const imageLink = `${fullUrl}/images/${image.id}`;
   return (
-    <ContextMenu>
+    <ContextMenu onOpenChange={(isOpen) => (isOpen ? setSelectingEnabled(false) : setTimeout(() => setSelectingEnabled(true), 250))}>
       <ContextMenuTrigger>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="print:hidden w-72">
+      <ContextMenuContent onContextMenu={(e) => e.preventDefault()} className="print:hidden w-72">
         <ImageSelectionContextMenuItems imageId={image.id} />
         <ContextMenuSeparator />
         <ContextMenuGroup>
@@ -81,12 +83,13 @@ export function ImageContextMenu({ image, children }: { image: TImage; children:
 }
 
 export function AlbumContextMenu({ album, children }: { album: TAlbum; children: React.ReactNode; }) {
+  const setSelectingEnabled = useSelectionStore(useShallow((s) => s.setSelectingEnabled));
   const fullUrl = useClientHost();
   const albumLink = `${fullUrl}/albums/${album.id}`;
   return (
-    <ContextMenu>
+    <ContextMenu onOpenChange={(isOpen) => (isOpen ? setSelectingEnabled(false) : setTimeout(() => setSelectingEnabled(true), 500))}>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="print:hidden w-72">
+      <ContextMenuContent onContextMenu={(e) => e.preventDefault()} className="print:hidden w-72">
         <AlbumSelectionContextMenuItems albumId={album.id} />
         <ContextMenuSeparator />
         <ContextMenuGroup>

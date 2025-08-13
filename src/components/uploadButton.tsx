@@ -35,6 +35,14 @@ const useUploadThingInputProps = (input: UTInput, ...args: UTArgs) => {
   };
 };
 
+const LoadingTextToast = ({ text }: { text: string; }) => (
+  <div className="flex gap-2 items-center">
+    <LoadingIcon className="size-6" />
+    <span className="text-lg">{text}</span>
+  </div>
+);
+
+const uploadToastId = "button_upload_begin";
 export function SimpleUploadButton() {
   const router = useRouter();
   const posthog = usePostHog();
@@ -44,29 +52,34 @@ export function SimpleUploadButton() {
     { albumID },
     "imageUploader",
     {
+      onBeforeUploadBegin(files) {
+        toast(
+          <LoadingTextToast text="Starting Upload" />,
+          { id: uploadToastId, duration: 60000 }
+        );
+        return files;
+      },
       onUploadBegin() {
         posthog.capture("upload_begin");
         toast(
-          (
-            <div className="flex gap-2 items-center">
-              <LoadingIcon className="size-6" />
-              <span className="text-lg">Uploading...</span>
-            </div>
-          ),
-          {
-            id: "upload-begin",
-            duration: 60000
-          }
+          <LoadingTextToast text="Uploading 0%" />,
+          { id: uploadToastId }
+        );
+      },
+      onUploadProgress(p) {
+        toast(
+          <LoadingTextToast text={`Uploading ${p}%`} />,
+          { id: uploadToastId }
         );
       },
       onUploadError(error) {
         posthog.capture("upload_error", { error });
-        toast.dismiss("upload-begin");
+        toast.dismiss(uploadToastId);
         toast.error("Upload failed. Please try again later.");
       },
       onClientUploadComplete() {
         posthog.capture("upload_complete");
-        toast.dismiss("upload-begin");
+        toast.dismiss(uploadToastId);
         toast(
           (
             <span className="text-lg">

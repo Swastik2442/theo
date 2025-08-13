@@ -5,7 +5,13 @@ import { useShallow } from "zustand/react/shallow";
 
 import { useRouteStore } from "~/contexts/stores/routeStoreProvider";
 import { useSelectionStore } from "~/contexts/stores/selectionStoreProvider";
-import { ContextMenuGroup, ContextMenuItem, ContextMenuShortcut } from "~/components/ui/context-menu";
+import { useDialogStore } from "~/contexts/stores/dialogStoreProvider";
+import { useDownloadSelection } from "~/hooks/downloadSelection";
+import {
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuShortcut
+} from "~/components/ui/context-menu";
 
 // TODO: Implement cut and paste functionality
 function CommonSelectionContextMenuItems() {
@@ -16,7 +22,14 @@ function CommonSelectionContextMenuItems() {
     myAlbums: s.myAlbums,
     myAlbumImages: s.myAlbumImages
   })));
-  const { notSelectionMode, selectedImages, selectedAlbums, modifyImages, modifyAlbums, reset } = useSelectionStore(useShallow((s) => ({
+  const {
+    notSelectionMode,
+    selectedImages,
+    selectedAlbums,
+    modifyImages,
+    modifyAlbums,
+    reset
+  } = useSelectionStore(useShallow((s) => ({
     notSelectionMode: s.selectedImages.size == 0 && s.selectedAlbums.size == 0,
     selectedImages: s.selectedImages,
     selectedAlbums: s.selectedAlbums,
@@ -24,6 +37,14 @@ function CommonSelectionContextMenuItems() {
     modifyAlbums: s.modifyAlbums,
     reset: s.reset
   })));
+
+  const { setDialog, dialogOpen, setDialogOpen } = useDialogStore(useShallow((s) => ({
+    setDialog: s.setDialog,
+    dialogOpen: s.dialogOpen,
+    setDialogOpen: s.setDialogOpen
+  })));
+
+  const { downloading, downloadSelection } = useDownloadSelection();
 
   return (
     <>
@@ -40,20 +61,42 @@ function CommonSelectionContextMenuItems() {
         Deselect All
       </ContextMenuItem>
       <ContextMenuItem onSelect={() => {
-        modifyImages(Array.from(new Set(myAlbumImages.map((img) => img.id)).difference(selectedImages)));
+        modifyImages(new Set(myAlbumImages.map((img) => img.id)).difference(selectedImages));
         if (isHomePage) {
-          modifyAlbums(Array.from(new Set(myAlbums.map((album) => album.id)).difference(selectedAlbums)));
+          modifyAlbums(new Set(myAlbums.map((album) => album.id)).difference(selectedAlbums));
         }
       }} disabled={notSelectionMode} inset>
-        Invert Selection
+        Invert Selected Items
+      </ContextMenuItem>
+      <ContextMenuItem
+        onSelect={() => { setDialog("MOVE_SELECTION"); setDialogOpen(true); }}
+        disabled={notSelectionMode || dialogOpen}
+        inset
+      >
+        Move Selected Items
       </ContextMenuItem>
       <ContextMenuItem disabled inset>
-        Cut Selection
+        Cut
         <ContextMenuShortcut>⌘X</ContextMenuShortcut>
       </ContextMenuItem>
       <ContextMenuItem disabled inset>
-        Paste Selection
+        Paste
         <ContextMenuShortcut>⌘V</ContextMenuShortcut>
+      </ContextMenuItem>
+      <ContextMenuItem
+        onSelect={downloadSelection}
+        disabled={notSelectionMode || downloading}
+        inset
+      >
+        Download
+      </ContextMenuItem>
+      <ContextMenuItem
+        onSelect={() => { setDialog("DELETE_SELECTION"); setDialogOpen(true); }}
+        disabled={notSelectionMode || dialogOpen}
+        variant="destructive"
+        inset
+      >
+        Delete
       </ContextMenuItem>
     </>
   );

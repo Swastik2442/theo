@@ -124,6 +124,8 @@ type FetchInput = Parameters<typeof fetch>['0'];
  * @param input URL to download from
  * @param init Request Init Parameters
  * @param fileName Optional Name for the Name
+ * @throws If Download was unsuccessful
+ * @returns Whether the Download was successful
  */
 export async function downloadAsBlob(input: FetchInput, init?: RequestInit, suggestedName?: string, types?: SaveFilePickerTypes) {
   const response = await fetch(input, init);
@@ -148,15 +150,15 @@ export async function downloadAsBlob(input: FetchInput, init?: RequestInit, sugg
         return pump();
       });
       pump().then(() => writable.close());
-      return;
+      return true;
     } catch (err) {
       if (err instanceof Error) {
         // Fail silently if the user has simply canceled the dialog
         if (err.name !== 'AbortError') {
           throw err;
         }
-        return;
       }
+      return false;
     }
   }
 
@@ -164,6 +166,7 @@ export async function downloadAsBlob(input: FetchInput, init?: RequestInit, sugg
   const objectUrl = URL.createObjectURL(blob);
   downloadFromUrl(objectUrl, suggestedName);
   URL.revokeObjectURL(objectUrl);
+  return true;
 }
 
 /**

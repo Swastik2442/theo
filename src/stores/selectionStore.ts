@@ -11,9 +11,17 @@ import { isMacOS } from '~/utils/platform';
 
 type AlbumId = (typeof albums.$inferSelect)["id"];
 type ImageId = (typeof images.$inferSelect)["id"];
-type SelectedItem =
-  | { id: ImageId; type: "image"; }
-  | { id: AlbumId; type: "album"; };
+type SelectedItem = {
+  /** Type of Item */
+  type: "image";
+  /** ID of the Image */
+  id: ImageId;
+} | {
+  /** Type of Item */
+  type: "album";
+  /** ID of the Album */
+  id: AlbumId;
+};
 type ModifierKeys = Pick<KeyboardEvent, "ctrlKey" | "shiftKey" | "metaKey">;
 
 export type SelectionState = {
@@ -24,23 +32,39 @@ export type SelectionState = {
   /** Last selected item, used for shift key based selection */
   lastSelectedItem: Nullable<SelectedItem>;
   /** Reference to the container element where selection is applied */
-  containerRef: React.RefObject<Nullable<HTMLDivElement>>;
+  selectionContainerRef: React.RefObject<Nullable<HTMLDivElement>>;
+  /** Whether Selecting Functionality is Enabled */
+  selectingEnabled: boolean;
+  /** Whether Items are being Dragged */
+  draggingMode: boolean;
+  /** Reference to the element attached to the mouse when dragging */
+  draggingContainerRef: React.RefObject<Nullable<HTMLDivElement>>;
+  /** Album to move the selected items into when dragging */
+  movingIntoAlbum: Nullable<AlbumId>;
 };
 export type SelectionActions = {
   /** Adds an item to the selection, based on pressed keys */
-  addItem: (item: SelectedItem, pressedKeys: ModifierKeys) => void;
+  addItem: (item: SelectedItem, pressedKeys?: ModifierKeys) => void;
   addImage: (id: ImageId) => void;
   addAlbum: (id: AlbumId) => void;
   /** Keeps/Removes an item from the selection, based on pressed keys */
-  removeItem: (item: SelectedItem, pressedKeys: ModifierKeys) => void;
+  removeItem: (item: SelectedItem, pressedKeys?: ModifierKeys) => void;
   removeImage: (id: ImageId) => void;
   removeAlbum: (id: AlbumId) => void;
   /** Modifies the selection of albums */
   modifyAlbums: (albumIds: AlbumId[] | Set<AlbumId>) => void;
   /** Modifies the selection of images */
   modifyImages: (imageIds: ImageId[] | Set<ImageId>) => void;
+  /** Modifies the selection of albums and images, based on pressed keys */
+  modifyItems: (albumIds: AlbumId[], imageIds: ImageId[], pressedKeys?: ModifierKeys) => void;
   /** Sets the last selected item */
   setLastSelectedItem: (item: SelectedItem) => void;
+  /** Enables/Disables Selecting Functionality */
+  setSelectingEnabled: (value: boolean) => void;
+  /** Enables/Disables Dragging of Items */
+  setDraggingMode: (value: boolean) => void;
+  /** Sets the Album to move the selected items into when dragging */
+  setMovingIntoAlbum: (value: Nullable<AlbumId>) => void;
   /** Resets the selection state */
   reset: () => void;
 };
@@ -50,7 +74,11 @@ export const defaultInitState: SelectionState = {
   selectedImages: new Set(),
   selectedAlbums: new Set(),
   lastSelectedItem: null,
-  containerRef: { current: null }
+  selectionContainerRef: { current: null },
+  selectingEnabled: true,
+  draggingMode: false,
+  draggingContainerRef: { current: null },
+  movingIntoAlbum: null
 };
 
 export const initSelectionStore = (): SelectionState => ({ ...defaultInitState });
@@ -61,8 +89,8 @@ export const createSelectionStore = (
   ...initState,
   addItem: (item, pressedKeys) => set((s) => {
     // if shift pressed,
-    if (pressedKeys.shiftKey) {
-      const containerDiv = s.containerRef.current;
+    if (pressedKeys !== undefined && pressedKeys.shiftKey) {
+      const containerDiv = s.selectionContainerRef.current;
       if (!containerDiv) throw new Error("Container ref is not set");
       const elements = Array.from(containerDiv.querySelectorAll(`*[${selectionIdAttr}][${selectionTypeAttr}]`)).map(
         el => ({ id: getElementId(el), type: getElementType(el) })
@@ -96,7 +124,7 @@ export const createSelectionStore = (
     }
 
     // if ctrl/meta pressed, add item to selection
-    if (isMacOS() ? pressedKeys.metaKey : pressedKeys.ctrlKey) {
+    if (pressedKeys !== undefined && (isMacOS() ? pressedKeys.metaKey : pressedKeys.ctrlKey)) {
       switch (item.type) {
         case "album":
           return { selectedAlbums: new Set(s.selectedAlbums).add(item.id), lastSelectedItem: { id: item.id, type: "album" } };
@@ -115,12 +143,12 @@ export const createSelectionStore = (
   }),
   removeItem: (item, pressedKeys) => set((s) => {
     // if shift pressed,
-    if (pressedKeys.shiftKey) {
+    if (pressedKeys !== undefined && pressedKeys.shiftKey) {
       // // if last selected item is not known, NOT POSSIBLE
       const lastSelectedItem = s.lastSelectedItem;
       if (!lastSelectedItem) throw new Error("Last selected item is not set");
 
-      const containerDiv = s.containerRef.current;
+      const containerDiv = s.selectionContainerRef.current;
       if (!containerDiv) throw new Error("Container ref is not set");
       const elements = Array.from(containerDiv.querySelectorAll(`*[${selectionIdAttr}][${selectionTypeAttr}]`)).map(
         el => ({ id: getElementId(el), type: getElementType(el) })
@@ -173,11 +201,11 @@ export const createSelectionStore = (
   }),
   addAlbum: (id) => set((s) => ({ selectedAlbums: new Set(s.selectedAlbums).add(id), lastSelectedItem: { id, type: "album" } })),
   addImage: (id) => set((s) => ({ selectedImages: new Set(s.selectedImages).add(id), lastSelectedItem: { id, type: "image" } })),
-  removeAlbum: (id) => {set((s) => {
+  removeAlbum: (id) => set((s) => {
     const next = new Set(s.selectedAlbums);
     next.delete(id);
     return { selectedAlbums: next, lastSelectedItem: { id, type: "album" } };
-  })},
+  }),
   removeImage: (id) => set((s) => {
     const next = new Set(s.selectedImages);
     next.delete(id);
@@ -185,6 +213,48 @@ export const createSelectionStore = (
   }),
   modifyAlbums: (albumIds) => set(() => ({ selectedAlbums: Array.isArray(albumIds) ? new Set(albumIds) : albumIds })),
   modifyImages: (imageIds) => set(() => ({ selectedImages: Array.isArray(imageIds) ? new Set(imageIds) : imageIds })),
+  modifyItems: (albumIds, imageIds, pressedKeys) => set((s) => {
+    const returnValue: Partial<Pick<SelectionState, "selectedAlbums" | "selectedImages" | "lastSelectedItem">> = {};
+
+    // Ctrl/Meta or Shift key - multi-selection
+    if (pressedKeys !== undefined && (
+      pressedKeys.shiftKey
+      || (isMacOS() ? pressedKeys.metaKey : pressedKeys.ctrlKey)
+    )) {
+      if (albumIds.length > 0) {
+        returnValue.selectedAlbums = new Set([...s.selectedAlbums, ...albumIds]);
+      }
+      if (imageIds.length > 0) {
+        returnValue.selectedImages = new Set([...s.selectedImages, ...imageIds]);
+      }
+      if (albumIds.length > 0 || imageIds.length > 0) {
+        if (imageIds.length > 0) {
+          returnValue.lastSelectedItem = { id: imageIds[imageIds.length - 1]!, type: "image" };
+        } else {
+          returnValue.lastSelectedItem = { id: albumIds[albumIds.length - 1]!, type: "album" };
+        }
+      }
+      return returnValue;
+    }
+
+    // No modifier keys - replace selection
+    if (albumIds.length > 0) {
+      returnValue.selectedAlbums = new Set(albumIds);
+    }
+    if (imageIds.length > 0) {
+      returnValue.selectedImages = new Set(imageIds);
+    }
+    if (albumIds.length > 0 || imageIds.length > 0) {
+      if (imageIds.length > 0) {
+        returnValue.lastSelectedItem = { id: imageIds[imageIds.length - 1]!, type: "image" };
+      } else {
+        returnValue.lastSelectedItem = { id: albumIds[albumIds.length - 1]!, type: "album" };
+      }
+    } else {
+      return { ...defaultInitState };
+    }
+    return returnValue;
+  }),
   setLastSelectedItem: (item: SelectedItem) => set((s) => {
     switch (item.type) {
       case "album":
@@ -195,5 +265,8 @@ export const createSelectionStore = (
         throw new Error(`Image with id ${item.id} is not selected`);
     }
   }),
+  setSelectingEnabled: (value) => set(() => ({ selectingEnabled: value })),
+  setDraggingMode: (value) => set(() => ({ draggingMode: value })),
+  setMovingIntoAlbum: (value) => set(() => ({ movingIntoAlbum: value })),
   reset: () => set(() => ({ ...defaultInitState }))
 }));
