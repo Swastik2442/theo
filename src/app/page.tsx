@@ -8,7 +8,6 @@ import { ClientAlbumsAndImagesSync } from "~/components/clientSync";
 export const dynamic = "force-dynamic";
 
 /*
-  TODO: Add "Selecting Images" for Mass Action (zustand?)
   TODO: Pagination or Infinite Scroll
 */
 export default async function HomePage() {

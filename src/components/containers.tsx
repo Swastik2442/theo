@@ -423,10 +423,10 @@ export function GridSelectionContainer({ children }: { children: React.ReactNode
       setSelectionBox({ left, top, width, height });
 
       // Scroll container if mouse goes out of bounds
-      if (currentY > window.innerHeight - 50 && currentY < document.body.scrollHeight) {
+      if (me.clientY > window.innerHeight - 50 && me.clientY < document.body.scrollHeight) {
         // Near bottom
         startScrollingDown();
-      } else if (currentY < 50 && window.scrollY > 0) {
+      } else if (me.clientY < 50 && window.scrollY > 0) {
         // Near top
         startScrollingUp();
       } else {
