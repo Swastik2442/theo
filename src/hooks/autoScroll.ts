@@ -34,12 +34,12 @@ export function useAutoScroll(scrollSpeed: number = 5) {
     if (vScrollFrameRef.current == null) return;
     // Stop if at bottom of page
     if (window.innerHeight + window.scrollY >= document.body.scrollHeight) {
-      stopHorizontalScrolling();
+      stopVerticalScrolling();
       return;
     }
     // Keep looping
     vScrollFrameRef.current = requestAnimationFrame(autoScrollDown);
-  }, [scrollSpeed]);
+  }, [scrollSpeed, stopVerticalScrolling]);
   const autoScrollUp = useCallback(() => {
     window.scrollBy(0, -scrollSpeed);
 
@@ -47,12 +47,12 @@ export function useAutoScroll(scrollSpeed: number = 5) {
     if (vScrollFrameRef.current == null) return;
     // Stop if at top of page
     if (window.scrollY <= 0) {
-      stopHorizontalScrolling();
+      stopVerticalScrolling();
       return;
     }
     // Keep looping
     vScrollFrameRef.current = requestAnimationFrame(autoScrollUp);
-  }, [scrollSpeed]);
+  }, [scrollSpeed, stopVerticalScrolling]);
   const autoScrollRight = useCallback(() => {
     window.scrollBy(scrollSpeed, 0);
 
@@ -60,12 +60,12 @@ export function useAutoScroll(scrollSpeed: number = 5) {
     if (hScrollFrameRef.current == null) return;
     // Stop if at end of page
     if (window.innerWidth + window.scrollX >= document.body.scrollWidth) {
-      stopVerticalScrolling();
+      stopHorizontalScrolling();
       return;
     }
     // Keep looping
     hScrollFrameRef.current = requestAnimationFrame(autoScrollRight);
-  }, [scrollSpeed]);
+  }, [scrollSpeed, stopHorizontalScrolling]);
   const autoScrollLeft = useCallback(() => {
     window.scrollBy(-scrollSpeed, 0);
 
@@ -73,29 +73,29 @@ export function useAutoScroll(scrollSpeed: number = 5) {
     if (hScrollFrameRef.current == null) return;
     // Stop if at start of page
     if (window.scrollX <= 0) {
-      stopVerticalScrolling();
+      stopHorizontalScrolling();
       return;
     }
     // Keep looping
     hScrollFrameRef.current = requestAnimationFrame(autoScrollLeft);
-  }, [scrollSpeed]);
+  }, [scrollSpeed, stopHorizontalScrolling]);
 
   const startScrollingDown = useCallback(() => {
-    stopHorizontalScrolling();
+    stopVerticalScrolling();
     vScrollFrameRef.current = requestAnimationFrame(autoScrollDown);
-  }, [stopHorizontalScrolling, autoScrollDown]);
+  }, [stopVerticalScrolling, autoScrollDown]);
   const startScrollingUp = useCallback(() => {
-    stopHorizontalScrolling();
+    stopVerticalScrolling();
     vScrollFrameRef.current = requestAnimationFrame(autoScrollUp);
-  }, [stopHorizontalScrolling, autoScrollUp]);
+  }, [stopVerticalScrolling, autoScrollUp]);
   const startScrollingRight = useCallback(() => {
-    stopVerticalScrolling();
+    stopHorizontalScrolling();
     hScrollFrameRef.current = requestAnimationFrame(autoScrollRight);
-  }, [stopVerticalScrolling, autoScrollRight]);
+  }, [stopHorizontalScrolling, autoScrollRight]);
   const startScrollingLeft = useCallback(() => {
-    stopVerticalScrolling();
+    stopHorizontalScrolling();
     hScrollFrameRef.current = requestAnimationFrame(autoScrollLeft);
-  }, [stopVerticalScrolling, autoScrollLeft]);
+  }, [stopHorizontalScrolling, autoScrollLeft]);
 
   useEffect(() => {
     document.addEventListener("blur", stopScrolling, true);
